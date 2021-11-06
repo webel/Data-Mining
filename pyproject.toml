@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "id2222_data_mining"
+version = "0.1.0"
+description = ""
+authors = ["Evie <evita@stenqvist.co>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+black = "^21.10b0"
+
+[tool.poetry.dev-dependencies]
+ipdb = "^0.13.9"
+ipython = "^7.29.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
