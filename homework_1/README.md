@@ -1,3 +1,20 @@
+# Notes
+
+After running the text similarity for the fradulent emails I get this output
+
+```sh
+email-1283.txt and email-2979.txt have jaccard similarity value 0.0
+email-1283.txt and email-405.txt have jaccard similarity value 0.0
+email-1283.txt and email-413.txt have jaccard similarity value 0.0
+email-1283.txt and email-2771.txt have jaccard similarity value 0.0
+email-1283.txt and email-3541.txt have jaccard similarity value 0.0
+email-3494.txt and email-3493.txt have jaccard similarity value 1.0
+email-3480.txt and email-3374.txt have jaccard similarity value 0.7819205065072107
+email-3480.txt and email-3462.txt have jaccard similarity value 0.9611027190332326
+email-10.txt and email-371.txt have jaccard similarity value 0.7423634680654119
+email-10.txt and email-372.txt have jaccard similarity value 0.7423634680654119
+```
+
 # Task
 
 You are to implement the stages of finding textually similar documents based on Jaccard similarity using the shingling, minhashing, and locality-sensitive hashing (LSH) techniques and corresponding algorithms. The implementation can be done using any big data processing framework, such as Apache Spark, Apache Flink, or no framework, e.g., in Java, Python, etc. To test and evaluate your implementation, write a program that uses your implementation to find similar documents in a corpus of 5-10 or more documents such as web pages or emails.

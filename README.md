@@ -4,7 +4,7 @@
 
 Uses `poetry` as package manager.
 
-**NOTE** although there's no need at this point, the only packages added for homework 1 is for easier debugging with `ipdb` and `ipython`, as well as auto-formatting with `black`.
+> **NOTE** although there's no need at this point, the only packages added for homework 1 is for easier debugging with `ipdb` and `ipython`, as well as auto-formatting with `black`, if you want this but would rather use pip go with that 🤷‍♀️.
 
 ### Install poetry
 
