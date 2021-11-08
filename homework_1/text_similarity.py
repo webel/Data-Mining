@@ -30,7 +30,7 @@ class Shingling:
 
     ### Class attributes
     all_hashed_shingles: set[int] = set()
-    email2hashed: dict = {}
+    doc2hashed: dict = {}
     path = "shingling.pickle"
 
     def __init__(self, k, document, document_name):
@@ -53,14 +53,26 @@ class Shingling:
             hashed_shingle = hash(shingle)
             Shingling.all_hashed_shingles.add(hashed_shingle)
             self.hashed.add(hashed_shingle)
-        Shingling.email2hashed[self.document_name] = self.hashed
+        Shingling.doc2hashed[self.document_name] = self.hashed
+        return self.hashed
+
+    @classmethod
+    def get_all_hashed_shingles(cls):
+        assert len(cls.all_hashed_shingles) != 0, "all_hashed_shingles shouldn't be 0!"
+
+        return cls.all_hashed_shingles
+
+    @classmethod
+    def get_doc2hashed(cls):
+        assert len(cls.doc2hashed.keys()) != 0,  "doc2hashed shouldn't be 0!"
+        return cls.doc2hashed
 
     @classmethod
     def save_to_file(cls):
         with open(cls.path, "wb") as f:
             data_dict = {
                 "all_hashed_shingles": cls.all_hashed_shingles,
-                "email2hashed": cls.email2hashed,
+                "doc2hashed": cls.doc2hashed,
             }
             pickle.dump(data_dict, f)
 
@@ -70,7 +82,9 @@ class Shingling:
             raise Exception("Previous runs have not been saved to file.")
         with open(cls.path, "rb") as f:
             data_dict = pickle.load(f)
-            return data_dict["all_hashed_shingles"], data_dict["email2hashed"]
+            cls.all_hashed_shingles = data_dict["all_hashed_shingles"]
+            cls.doc2hashed = data_dict["doc2hashed"]
+            return cls.all_hashed_shingles, cls.doc2hashed
 
 
 class CompareSets:
@@ -126,13 +140,15 @@ class MinHashing:
 
 def simple_test():
     """Trivial test with very similar sentences"""
-    A = Shingling(3, TestDocuments.sentenceA).populate_hashed()
-    B = Shingling(3, TestDocuments.sentenceB).populate_hashed()
+    A = Shingling(3, TestDocuments.A, "A").populate_hashed()
+    B = Shingling(3, TestDocuments.B, "B").populate_hashed()
 
-    print(CompareSets.jaccard_similarity(A.hashed, B.hashed))
+    similarity = CompareSets.jaccard_similarity(A, B)
+    print(f"Similarity between A and B {similarity}")
+    return similarity
 
 
-def fradulent_email_jaccard_test():
+def test_fradulent_email_jaccard():
     directory = "./emails"
 
     for filename in os.listdir(directory):
@@ -143,20 +159,20 @@ def fradulent_email_jaccard_test():
         shingler.populate_hashed()
 
     Shingling.save_to_file()
-    email2hashed = Shingling.email2hashed
+    doc2hashed = Shingling.doc2hashed
 
     similar_n = 5
     disimilar_n = 5
     similar_threshhold = 0.65
     disimilar_threshhold = 0.0
-    for email1 in email2hashed.keys():
+    for email1 in doc2hashed.keys():
         if similar_n == 0 and disimilar_n == 0:
             break
-        for email2 in email2hashed.keys():
+        for email2 in doc2hashed.keys():
             if email1 == email2:
                 continue
             jacc = CompareSets.jaccard_similarity(
-                email2hashed[email1], email2hashed[email2]
+                doc2hashed[email1], doc2hashed[email2]
             )
             if jacc > similar_threshhold and similar_n > 0:
                 print(f"{email1} and {email2} have jaccard similarity value {jacc} \n")
@@ -176,11 +192,11 @@ def test_build_minhash_signatures():
     Shingling.path = "test_documents.pickle"
     Shingling.save_to_file()
 
-    all_hashed, email2hashed = Shingling.all_hashed_shingles, Shingling.email2hashed
-    signatures = MinHashing(n_functions=20).build_minhash_signatures(
-        all_hashed, email2hashed
+    all_hashed, doc2hashed = Shingling.all_hashed_shingles, Shingling.doc2hashed
+    signatures = MinHashing(n_functions=35).build_minhash_signatures(
+        all_hashed, doc2hashed
     )
-    pprint(signatures)
+    return signatures
 
 
 if __name__ == "__main__":
