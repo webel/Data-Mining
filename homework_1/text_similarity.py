@@ -138,6 +138,25 @@ class MinHashing:
         return minhashed
 
 
+class CompareSignatures:
+    def approximate_jaccard_similarity(A: list, B: list):
+        # Maybe using counters and comparing the differences would be
+        # quick?
+        # counters = {}
+        # for key, value in signatures.items():
+        #     counters[key] = Counter(value)
+        # pprint(counters)
+        assert len(A) == len(B), "Length of signatures should be equal"
+        # Naive way
+        equal_count = 0
+        length = len(A)
+        for index in range(length):
+            if A[index] == B[index]:
+                equal_count += 1
+        approx_similarity = equal_count / length
+        return approx_similarity
+
+
 def simple_test():
     """Trivial test with very similar sentences"""
     A = Shingling(3, TestDocuments.A, "A").populate_hashed()
@@ -198,7 +217,28 @@ def test_build_minhash_signatures():
     )
     return signatures
 
+def test_compare_jaccard_and_minhash_signatures():
+    """Compare two very similar sentences aswell as two disimilar
+    for the jaccard similarity and the minhash approximation.
+    """
+    A = Shingling(3, TestDocuments.A, "A").populate_hashed()
+    B = Shingling(3, TestDocuments.B, "B").populate_hashed()
+
+    all_hashed = Shingling.get_all_hashed_shingles()
+    doc2hashed = Shingling.get_doc2hashed()
+
+    n_functions = 25
+    signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
+        all_hashed, doc2hashed
+    )
+
+    jaccard_similarity = CompareSets.jaccard_similarity(A, B)
+    approx_similarity = CompareSignatures.approximate_jaccard_similarity(
+        signatures["A"], signatures["B"]
+    )
+    print(f"Jaccard similarity {jaccard_similarity}")
+    print(f"Approximate similarity {approx_similarity}")
+
 
 if __name__ == "__main__":
-    # fradulent_email_jaccard_test()
-    test_build_minhash_signatures()
+    test_compare_jaccard_and_minhash_signatures()
