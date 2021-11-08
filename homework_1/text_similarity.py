@@ -94,15 +94,6 @@ class CompareSets:
         return intersection / union
 
 
-def linear_hash(a, b, prime):
-    print(f"{a}x + {b} mod {prime}")
-
-    def func(x):
-        return (a * x + b) % prime
-
-    return func
-
-
 class MinHashing:
     hash_functions: list[Callable] = []
     n_functions: int
@@ -111,13 +102,22 @@ class MinHashing:
         self.n_functions = n_functions
         self.generate_hash_functions(n_functions)
 
+    @staticmethod
+    def linear_hash(a, b, prime, print_func=False):
+        print_func and print(f"{a}x + {b} mod {prime}")
+
+        def func(x):
+            return (a * x + b) % prime
+
+        return func
+
     def generate_hash_functions(self, n=100):
         if n > 100:
             raise Exception("Not enough prestored primes!")
         for prime in primes[:n]:
             a = random.randint(1, prime - 1)
             b = random.randint(1, prime - 1)
-            func = linear_hash(a, b, prime)
+            func = self.linear_hash(a, b, prime)
             self.hash_functions.append(func)
 
     def build_minhash_signatures(self, items: set, doc2items: dict[str, set]):
