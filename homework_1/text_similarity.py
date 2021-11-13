@@ -26,6 +26,7 @@ class TestDocuments:
         for letter in letters:
             yield letter, getattr(TestDocuments, letter)
 
+
 @dataclass
 class Shingling:
     k: int
@@ -166,6 +167,7 @@ def test_simple():
     print(f"Similarity between A and B {similarity}")
     return similarity
 
+
 def get_fradulent_email_shingling(force_new=False):
     directory = "./emails"
     pickle_path = "fradulent_emails_shingling.pickle"
@@ -180,6 +182,7 @@ def get_fradulent_email_shingling(force_new=False):
             shingling.add_document(document=content, document_name=filename)
         shingling.save_to_file()
     return shingling
+
 
 @test
 def test_fradulent_email_jaccard():
@@ -211,10 +214,11 @@ def test_fradulent_email_jaccard():
             if similar_n == 0 and disimilar_n == 0:
                 break
 
+
 @test
 def test_fradulent_email_minhash_signatures():
     """Create minhash signatures for fradulent emails
-    print a subset of 10
+    print a subset of 10, test two known similarities
     """
     shingling = get_fradulent_email_shingling(force_new=True)
     sorted_hashed_shingles = sorted(shingling.all_hashed_shingles)
@@ -222,14 +226,17 @@ def test_fradulent_email_minhash_signatures():
     signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
         sorted_hashed_shingles, shingling.doc2hashed
     )
-    
-    email1 = signatures['email-3480.txt']
-    email2 = signatures['email-3374.txt']
+
+    email1 = signatures["email-3480.txt"]
+    email2 = signatures["email-3374.txt"]
 
     approx_similarity = CompareSignatures.approximate_jaccard_similarity(email1, email2)
-    print(f"Approx similarity for email-3480.txt and email-3374.txt: {approx_similarity}")
+    print(
+        f"Approx similarity for email-3480.txt and email-3374.txt: {approx_similarity}"
+    )
 
     return signatures
+
 
 @test
 def test_simple_build_minhash_signatures():
@@ -299,5 +306,5 @@ if __name__ == "__main__":
     test_simple()
     test_simple_build_minhash_signatures()
     test_simple_compare_jaccard_and_minhash_signatures()
-    #test_fradulent_email_jaccard()
-    #test_fradulent_email_minhash_signatures()
+    # test_fradulent_email_jaccard()
+    # test_fradulent_email_minhash_signatures()
