@@ -120,7 +120,7 @@ class MinHashing:
             self.hash_functions.append(func)
 
     def build_minhash_signatures(
-        self, items: set, doc2items: dict[str, set]
+        self, items: set, doc2items: dict[str, set], print_updates: bool = False
     ) -> dict[str, list[int]]:
         minhashed = {
             doc_identifier: [math.inf] * self.n_functions
@@ -128,13 +128,15 @@ class MinHashing:
         }
         for index, item in enumerate(items):
             row_values = [func(index) for func in self.hash_functions]
+            if index != 0 and index % 100000 == 0:
+                print(f"Done row {index} out of {len(items)}", flush=True)
             for doc_identifier, item_set in doc2items.items():
                 if item in item_set:
                     for index, value in enumerate(minhashed[doc_identifier]):
                         if row_values[index] < value:
-                            # print(
-                            #     f"Changing minhash_{index} value for {doc_identifier} from {minhashed[doc_identifier][index]} to {row_values[index]}"
-                            # )
+                            print_updates and print(
+                                f"Changing minhash_{index} value for {doc_identifier} from {minhashed[doc_identifier][index]} to {row_values[index]}"
+                            )
                             minhashed[doc_identifier][index] = row_values[index]
         return minhashed
 
@@ -164,22 +166,25 @@ def test_simple():
     print(f"Similarity between A and B {similarity}")
     return similarity
 
-
-@test
-def test_fradulent_email_jaccard():
-    """Get 5 very similar fradulent emails and 5 very disimilar emails"""
+def get_fradulent_email_shingling(force_new=False):
     directory = "./emails"
     pickle_path = "fradulent_emails_shingling.pickle"
-    if os.path.isfile("fradulent_emails_shingling.pickle"):
+    if not force_new and os.path.isfile("fradulent_emails_shingling.pickle"):
         shingling = Shingling.load_from_file(pickle_path)
     else:
-        shingling = Shingling(k=7, path=pickle_path)
+        shingling = Shingling(k=6, path=pickle_path)
         for filename in os.listdir(directory):
             content = ""
             with open(f"{directory}/{filename}", "r") as f:
                 content = f.read()
             shingling.add_document(document=content, document_name=filename)
         shingling.save_to_file()
+    return shingling
+
+@test
+def test_fradulent_email_jaccard():
+    """Get 5 very similar fradulent emails and 5 very disimilar emails"""
+    shingling = get_fradulent_email_shingling()
 
     doc2hashed = shingling.doc2hashed
 
@@ -226,11 +231,11 @@ def test_simple_build_minhash_signatures():
 
 
 @test
-def test_compare_jaccard_and_minhash_signatures():
+def test_simple_compare_jaccard_and_minhash_signatures():
     """Compare two very similar sentences aswell as two disimilar
     for the jaccard similarity and the minhash approximation.
     """
-    shingling = Shingling(k=5)
+    shingling = Shingling(k=3)
     shingling.add_documents(
         {"A": TestDocuments.A, "B": TestDocuments.B, "H": TestDocuments.H}
     )
@@ -241,7 +246,7 @@ def test_compare_jaccard_and_minhash_signatures():
     all_hashed = shingling.get_all_hashed_shingles()
     doc2hashed = shingling.get_doc2hashed()
 
-    n_functions = 200
+    n_functions = 100
     signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
         all_hashed, doc2hashed
     )
@@ -272,7 +277,8 @@ def test_compare_jaccard_and_minhash_signatures():
 
 
 if __name__ == "__main__":
-    # test_fradulent_email_jaccard()
     test_simple()
     test_simple_build_minhash_signatures()
-    test_compare_jaccard_and_minhash_signatures()
+    test_simple_compare_jaccard_and_minhash_signatures()
+    #test_fradulent_email_jaccard()
+    #test_fradulent_email_minhash_signatures()
