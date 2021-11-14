@@ -1,6 +1,8 @@
-from utils import test
-from text_similarity import Shingling, MinHashing, CompareSets, CompareSignatures
 import string
+from pprint import pprint
+
+from text_similarity import LSH, CompareSets, CompareSignatures, MinHashing, Shingling
+from utils import test
 
 
 class TestDocuments:
@@ -169,9 +171,37 @@ def test_simple_compare_jaccard_and_minhash_signatures():
     )
 
 
+@test
+def test_simple_lsh():
+    """Get the candidate pairs for our simple documents
+    """
+    n_functions = 100
+
+    shingler = Shingling(3)
+    for letter, sentence in TestDocuments.generator():
+        shingler.add_document(document=sentence, document_name=letter)
+    shingles = sorted(shingler.get_all_hashed_shingles())
+    signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
+        shingles, shingler.doc2hashed
+    )
+
+    bands = 20
+    rows = 5
+    lsh = LSH(n=n_functions, r=rows, b=bands)
+    print(f"Approx threshhold is: {lsh.approx_threshold}, with n = {n_functions}, b = {bands} and r = {rows}")
+    dup_buckets = {}
+    for letter, signature in signatures.items():
+        lsh_for_sig = lsh.get_lsh_for_signature(signature)
+        buckets = lsh.insert_lsh_in_bucket(letter, lsh_for_sig)
+        buckets = lsh.prepare_dup_buckets(buckets, letter)
+        dup_buckets[letter] = buckets
+    pprint(dup_buckets)
+
+
 if __name__ == "__main__":
     test_simple()
     test_simple_build_minhash_signatures()
     test_simple_compare_jaccard_and_minhash_signatures()
     # test_fradulent_email_jaccard()
     # test_fradulent_email_minhash_signatures()
+    test_simple_lsh()

@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Callable
+from functools import reduce
+from collections import defaultdict
 from utils import primes, test
 import math
 import random
@@ -133,3 +135,43 @@ class CompareSignatures:
                 equal_count += 1
         approx_similarity = equal_count / length
         return approx_similarity
+
+
+@dataclass
+class LSH:
+    n: int = 100
+    r: int = 5
+    b: int = 20
+
+    cache: list = field(default_factory=list)
+
+    @property
+    def approx_threshold(self):
+        return (1 / self.b) ** (1 / self.r)
+
+    def __post_init__(self):
+        assert self.r * self.b == self.n, "r*b should be n!"
+        self.cache = [defaultdict(list) for _ in range(self.b)]
+
+    def get_lsh_for_signature(self, signature) -> list[int]:
+        lsh = []
+        for i in range(self.b):
+            # We make it a tuple as list is unhashable
+            band = tuple(signature[i * self.r : i * self.r + self.r])
+            lsh.append(hash(band))
+        return lsh
+
+    def insert_lsh_in_bucket(self, doc_id, lsh):
+        buckets = []
+        for i, band in enumerate(lsh):
+            if doc_id not in self.cache[i][band]:
+                buckets.append(self.cache[i][band])
+                self.cache[i][band].append(doc_id)
+        return buckets
+
+    @staticmethod
+    def prepare_dup_buckets(buckets, id=None):
+        all = list(set(reduce(list.__add__, buckets, [])))
+        if id:
+            all.remove(id)
+        return all
