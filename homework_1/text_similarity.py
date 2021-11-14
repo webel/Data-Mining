@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Callable
 from functools import reduce
+from itertools import chain
 from collections import defaultdict
 from utils import primes, test
 import math
@@ -145,13 +146,25 @@ class LSH:
 
     cache: list = field(default_factory=list)
 
+    def __post_init__(self):
+        assert self.r * self.b == self.n, "r*b should be n!"
+        self.cache = [defaultdict(list) for _ in range(self.b)]
+
     @property
     def approx_threshold(self):
         return (1 / self.b) ** (1 / self.r)
 
-    def __post_init__(self):
-        assert self.r * self.b == self.n, "r*b should be n!"
-        self.cache = [defaultdict(list) for _ in range(self.b)]
+    @staticmethod
+    def get_candidate_pairs(buckets, id=None):
+        # Flatten the list of lists
+        flattened = list(chain.from_iterable(buckets))
+        # We make it a set to get rid of duplicates
+        candidate_pairs = set(flattened)
+        # If supplied with current id, remove it from set
+        if id:
+            candidate_pairs.remove(id)
+
+        return candidate_pairs if bool(candidate_pairs) else None
 
     def get_lsh_for_signature(self, signature) -> list[int]:
         lsh = []
@@ -169,9 +182,11 @@ class LSH:
                 self.cache[i][band].append(doc_id)
         return buckets
 
-    @staticmethod
-    def prepare_dup_buckets(buckets, id=None):
-        all = list(set(reduce(list.__add__, buckets, [])))
-        if id:
-            all.remove(id)
-        return all
+    def get_candidate_pairs_for_signatures(self, signatures: dict):
+        all_candidate_pairs = {}
+        for id, signature in signatures.items():
+            lsh_for_signature = self.get_lsh_for_signature(signature)
+            buckets = self.insert_lsh_in_bucket(id, lsh_for_signature)
+            candidate_pairs = self.get_candidate_pairs(buckets, id=id)
+            all_candidate_pairs[id] = candidate_pairs
+        return all_candidate_pairs

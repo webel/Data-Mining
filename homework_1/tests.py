@@ -10,10 +10,10 @@ class TestDocuments:
     B = "The dog that chased the cat"
     C = "Chased the cat, the dog did"
     D = "Like a cat on a hot tin roof"
-    E = "Football is a ball"
-    F = "The yanks call footie soccer"
+    E = "The brits call football..."
+    F = "The yanks call football..."
     G = "The dog likes football, but not the cat"
-    H = "Soccer is all but a delight"
+    H = "Soccer is just football"
     I = "The cat plots giving the dog a chocolate delight"
     J = "What a fright, this spite, at midnight"
 
@@ -173,11 +173,10 @@ def test_simple_compare_jaccard_and_minhash_signatures():
 
 @test
 def test_simple_lsh():
-    """Get the candidate pairs for our simple documents
-    """
-    n_functions = 100
+    """Get the candidate pairs for our simple documents"""
+    n_functions = 24
 
-    shingler = Shingling(3)
+    shingler = Shingling(4)
     for letter, sentence in TestDocuments.generator():
         shingler.add_document(document=sentence, document_name=letter)
     shingles = sorted(shingler.get_all_hashed_shingles())
@@ -185,17 +184,14 @@ def test_simple_lsh():
         shingles, shingler.doc2hashed
     )
 
-    bands = 20
-    rows = 5
+    bands = 8
+    rows = 3
     lsh = LSH(n=n_functions, r=rows, b=bands)
-    print(f"Approx threshhold is: {lsh.approx_threshold}, with n = {n_functions}, b = {bands} and r = {rows}")
-    dup_buckets = {}
-    for letter, signature in signatures.items():
-        lsh_for_sig = lsh.get_lsh_for_signature(signature)
-        buckets = lsh.insert_lsh_in_bucket(letter, lsh_for_sig)
-        buckets = lsh.prepare_dup_buckets(buckets, letter)
-        dup_buckets[letter] = buckets
-    pprint(dup_buckets)
+    print(
+        f"Approx threshhold is: {lsh.approx_threshold}, with n = {n_functions}, b = {bands} and r = {rows} \n"
+    )
+    candidate_pairs = lsh.get_candidate_pairs_for_signatures(signatures)
+    pprint(candidate_pairs)
 
 
 if __name__ == "__main__":
