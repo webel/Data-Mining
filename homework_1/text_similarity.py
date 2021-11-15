@@ -78,11 +78,14 @@ class CompareSets:
 
 
 class MinHashing:
-    hash_functions: list[Callable] = []
     n_functions: int
+    path: str
 
-    def __init__(self, n_functions=100):
+    hash_functions: list[Callable] = []
+
+    def __init__(self, n_functions=100, path="minhashing.pickle"):
         self.n_functions = n_functions
+        self.path = path
         self.generate_hash_functions(n_functions)
 
     @staticmethod
@@ -122,7 +125,29 @@ class MinHashing:
                                 f"Changing minhash_{index} value for {doc_identifier} from {minhashed[doc_identifier][index]} to {row_values[index]}"
                             )
                             minhashed[doc_identifier][index] = row_values[index]
+        self.signatures = minhashed
         return minhashed
+
+    def save_to_file(self):
+        with open(self.path, "wb") as f:
+            data_dict = {
+                "n": self.n_functions,
+                "signatures": self.signatures,
+                # Can't add hash_functions directly, 
+                # although could save a, b and m if necessary?
+                # "hash_functions": self.hash_functions
+            }
+            pickle.dump(data_dict, f)
+
+    @classmethod
+    def load_from_file(cls, path) -> "MinHashing":
+        if not os.path.isfile(path):
+            raise Exception("Previous runs have not been saved to file.")
+        with open(path, "rb") as f:
+            data_dict = pickle.load(f)
+            minhashing = MinHashing(n_functions=data_dict["n"])
+            minhashing.signatures = data_dict["signatures"]
+            return minhashing
 
 
 class CompareSignatures:
