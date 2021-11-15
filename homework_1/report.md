@@ -1,44 +1,34 @@
-HW1
-
 # Homework 1
 
-**Authors**: Evita Stenqvist (920524-1020) and 
+**Authors**: Evita Stenqvist (920524-1020) and Linnea Fredriksson (930913-3008)
 
 ## Summary
 
-As a summary we include the complete output from `tests.py`:
+As a summary we include the complete output from `tests.py`, please see the file for the 10 simple sentences named A through J:
 
 ```txt
-class TestDocuments:
-    A = "The dog which chased the cat"
-    B = "The dog that chased the cat"
-    C = "Chased the cat, the dog did"
-    D = "Like a cat on a hot tin roof"
-    E = "The brits call football..."
-    F = "The yanks call football..."
-    G = "The dog likes football, but not the cat"
-    H = "Soccer is just football"
-    I = "The cat plots giving the dog a chocolate delight"
-    J = "What a fright, this spite, at midnight"
-
- => test_simple 
+ => test_simple_jaccard 
 Trivial jaccard test with two very similar sentences
-Similarity between A and B 0.6
+Similarity between A and B 0.59
+
+Timed: 0.00 seconds 
 
 
  => test_simple_build_minhash_signatures 
 Build signatures for our simple sentences
-Signatures for 20 hash functions
-A: [11, 3, 31, 39, 12, 4, 22, 12, 10, 13, 0, 6, 3, 1, 4, 5, 5, 12, 1, 3]
-B: [21, 3, 28, 18, 10, 4, 22, 12, 10, 13, 0, 17, 3, 1, 17, 0, 5, 12, 1, 3]
-C: [15, 3, 26, 24, 7, 4, 46, 6, 10, 4, 0, 1, 3, 1, 13, 4, 5, 1, 1, 15]
-D: [5, 7, 17, 0, 1, 1, 3, 1, 2, 8, 10, 4, 0, 4, 24, 5, 2, 6, 11, 4]
-E: [31, 8, 35, 2, 6, 27, 21, 11, 19, 2, 3, 2, 65, 8, 2, 1, 23, 8, 1, 3]
-F: [31, 8, 16, 2, 6, 9, 22, 18, 19, 23, 3, 2, 2, 8, 2, 1, 14, 7, 1, 3]
-G: [0, 3, 20, 3, 6, 6, 3, 5, 2, 13, 0, 18, 66, 8, 2, 1, 6, 13, 1, 3]
-H: [2, 2, 27, 30, 5, 27, 5, 18, 12, 6, 23, 33, 1, 10, 2, 1, 4, 0, 2, 27]
-I: [1, 3, 18, 6, 8, 1, 2, 10, 3, 9, 0, 3, 68, 0, 6, 2, 3, 2, 0, 0]
-J: [8, 3, 24, 12, 7, 1, 6, 3, 0, 1, 0, 7, 79, 5, 0, 0, 0, 1, 41, 0]
+Signatures for 10 hash functions
+A: [789, 479, 81, 48, 184, 314, 286, 346, 250, 88]
+B: [379, 717, 81, 745, 380, 314, 1289, 346, 250, 408]
+C: [470, 836, 81, 745, 478, 314, 180, 78, 191, 994]
+D: [242, 211, 84, 1163, 355, 331, 75, 28, 432, 861]
+E: [333, 92, 227, 141, 576, 280, 233, 832, 68, 1447]
+F: [743, 92, 227, 141, 86, 280, 233, 832, 68, 1012]
+G: [288, 330, 227, 257, 61, 280, 22, 137, 68, 106]
+H: [151, 360, 227, 257, 159, 280, 1341, 723, 9, 559]
+I: [379, 449, 376, 25, 380, 382, 497, 614, 373, 70]
+J: [60, 3, 519, 466, 257, 263, 1130, 78, 491, 221]
+
+Timed: 0.00 seconds 
 
 
  => test_simple_compare_jaccard_and_minhash_signatures 
@@ -49,30 +39,85 @@ A: The dog which chased the cat
 B: The dog that chased the cat
 H: Soccer is just football 
 
-Similar Jaccard similarity 0.6
-Similar Approximate similarity 0.62 with 100 hash functions
+Similar Jaccard similarity 0.5862068965517241
+Similar Approximate similarity 0.63 with 100 hash functions
 Disimilar Jaccard similarity 0.0
 Disimilar Approximate similarity 0.0 with 100 hash functions
+
+Timed: 0.00 seconds 
 
 
  => test_simple_lsh 
 Get the candidate pairs for our simple documents
 Approx threshhold is: 0.50, with n = 24, b = 8 and r = 3 
 
-Found candidate pairs: {'B': {'A'}, 'C': {'A', 'B'}, 'F': {'E'}} 
+Found candidate pairs: {'B': {'A'}, 'C': {'B', 'A'}, 'F': {'E'}} 
 
 B: The dog that chased the cat
         A: The dog which chased the cat
 C: Chased the cat, the dog did
-        A: The dog which chased the cat
         B: The dog that chased the cat
+        A: The dog which chased the cat
 F: The yanks call football...
         E: The brits call football...
+
+Timed: 0.00 seconds 
+
+
+ => test_fradulent_email_jaccard 
+Get 5 very similar fradulent emails and 5 very disimilar emails
+Jaccard similarity between pairs
+(email-1283.txt, email-3480.txt) = 0.028584927947082447 
+
+(email-1283.txt, email-3374.txt) = 0.027196149217809867 
+
+(email-2952.txt, email-3480.txt) = 0.027426663486763654 
+
+(email-2952.txt, email-2931.txt) = 0.6901117087298304 
+
+(email-2952.txt, email-1395.txt) = 0.684931506849315 
+
+(email-2952.txt, email-1396.txt) = 0.684931506849315 
+
+(email-2952.txt, email-3374.txt) = 0.027750730282375853 
+
+(email-3494.txt, email-3480.txt) = 0.023322775698243592 
+
+(email-3494.txt, email-3493.txt) = 1.0 
+
+(email-3480.txt, email-3374.txt) = 0.8402084237950499 
+
+
+Timed: 0.02 seconds 
+
+
+ => test_fradulent_email_minhash_signatures 
+Create minhash signatures for fradulent emails
+    test two known documents similarity
+    
+Approx similarity for email-3480.txt and email-3374.txt: 0.864
+
+Timed: 0.61 seconds 
+
+
+ => test_fradulent_email_lsh 
+Get the candidate pairs for our fradulent emails
+Approx threshhold is: 0.55, with n = 100, b = 20 and r = 5 
+
+Found candidate pairs: 
+
+{'email-1395.txt': {'email-2952.txt', 'email-2931.txt'},
+ 'email-1396.txt': {'email-2931.txt', 'email-2952.txt', 'email-1395.txt'},
+ 'email-2931.txt': {'email-2952.txt'},
+ 'email-3374.txt': {'email-3480.txt'},
+ 'email-3493.txt': {'email-3494.txt'}}
+
+Timed: 0.58 seconds 
 ```
 
 ## Files
 
-Our submission consists of three files, `text_similarity.py`, `tests.py` and `utils.py`. The first is our implementation and the second the proof of work. The third merely contains a decorator and prestored primes. 
+Our submission consists of three files, `text_similarity.py`, `tests.py` and `utils.py`. The first is our implementation and the second the proof of work. The third merely contains a decorator and prestored primes. We have included a subset of 10 emails from our email dataset consisting of over 4000 emails.
 
 The only requirement is `python3.9^`, all imports are from the basic python module library.
 
@@ -121,14 +166,14 @@ class CompareSets:
 
 ### MinHashing 
 
-We chose to implement the multiple hash-functions as opposed to the multiple permutations. Seeing as the "point" of the homework is not to generate primes (we hope) we chose to prestore 152 primes in our `utils.py` file.
+We chose to implement the multiple hash-functions as opposed to the multiple permutations. Seeing as the "point" of the homework is not to generate primes (we hope) we chose to prestore primes in our `utils.py` file.
 
 ```py
 class MinHashing:
     def generate_hash_functions(self, n=100):
         if n > len(primes):
             raise Exception("Not enough prestored primes!")
-        for prime in primes[:n]:
+        for prime in primes[::-1][:n]:
             a = random.randint(prime // 2, prime - 1)
             b = random.randint(prime // 2, prime - 1)
             func = self.linear_hash(a, b, prime)
@@ -161,7 +206,6 @@ Given two signatures, compute the fraction of overlapping elements by comparing 
 class CompareSignatures:
     def approximate_jaccard_similarity(A: list, B: list):
         assert len(A) == len(B), "Length of signatures should be equal"
-        # Naive way
         equal_count = 0
         length = len(A)
         for index in range(length):

@@ -36,14 +36,18 @@ def test_simple_jaccard():
     print(f"Similarity between A and B {similarity:0.2f}")
     return similarity
 
+def get_email_from_id(id: str) -> dict:
+    with open(f"emails/{id}", "r") as f:
+        email = f.read()
+    return email
 
-def get_fradulent_email_shingling(force_new=True):
+def get_fradulent_email_shingling(k=5, force_new=True):
     directory = "./emails"
     pickle_path = "fradulent_emails_shingling.pickle"
     if not force_new and os.path.isfile("fradulent_emails_shingling.pickle"):
         shingling = Shingling.load_from_file(pickle_path)
     else:
-        shingling = Shingling(k=5, path=pickle_path)
+        shingling = Shingling(k=k, path=pickle_path)
         for filename in os.listdir(directory):
             with open(f"{directory}/{filename}", "r") as f:
                 content = f.read()
@@ -55,7 +59,7 @@ def get_fradulent_email_shingling(force_new=True):
 @test
 def test_fradulent_email_jaccard():
     """Get 5 very similar fradulent emails and 5 very disimilar emails"""
-    shingling = get_fradulent_email_shingling()
+    shingling = get_fradulent_email_shingling(force_new=True)
 
     doc2hashed = shingling.doc2hashed
 
@@ -196,6 +200,33 @@ def test_simple_lsh():
             candidate_document = getattr(TestDocuments, candidate_id)
             print(f"\t{candidate_id}: {candidate_document}")
 
+@test
+def test_fradulent_email_lsh():
+    """Get the candidate pairs for our fradulent emails"""
+    n_functions = 100
+    shingling = get_fradulent_email_shingling()
+    
+    signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
+        shingling.all_hashed_shingles, shingling.doc2hashed
+    )
+
+    bands = 20
+    rows = 5
+    lsh = LSH(n=n_functions, r=rows, b=bands)
+    print(
+        f"Approx threshhold is: {lsh.approx_threshold:0.2f}, with n = {n_functions}, b = {bands} and r = {rows} \n"
+    )
+    found_candidate_pairs = lsh.get_candidate_pairs_for_signatures(signatures)
+    print("Found candidate pairs: \n")
+    pprint(found_candidate_pairs)
+    # NOTE: Uncomment these lines to see the emails in the terminal
+    # for id, candidate_pairs in found_candidate_pairs.items():
+    #     document = get_email_from_id(id)
+    #     print(f"{id}: {document}")
+    #     for candidate_id in candidate_pairs:
+    #         candidate_document = get_email_from_id(candidate_id)
+    #         print(f"\t{candidate_id}: {candidate_document}")
+
 
 if __name__ == "__main__":
     test_simple_jaccard()
@@ -204,3 +235,4 @@ if __name__ == "__main__":
     test_simple_lsh()
     test_fradulent_email_jaccard()
     test_fradulent_email_minhash_signatures()
+    test_fradulent_email_lsh()

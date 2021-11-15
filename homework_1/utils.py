@@ -1,3 +1,5 @@
+import time
+
 class terminal:
     PURPLE = "\033[95m"
     CYAN = "\033[96m"
@@ -16,7 +18,10 @@ def test(func):
         print("\n")
         print(f"{terminal.BOLD} => {func.__name__} {terminal.END}")
         print(f"{terminal.DARKCYAN}{func.__doc__}{terminal.END}")
+        start_time = time.time()
         func(*args, **kwargs)
+        end_time = time.time()
+        print(f"\n{terminal.BOLD}Timed: {(end_time - start_time):0.2f} seconds {terminal.END}")
 
     return func_with_name_and_docstring
 
