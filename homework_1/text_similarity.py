@@ -98,8 +98,8 @@ class MinHashing:
         if n > len(primes):
             raise Exception("Not enough prestored primes!")
         for prime in primes[:n]:
-            a = random.randint(1, prime - 1)
-            b = random.randint(1, prime - 1)
+            a = random.randint(prime // 2, prime - 1)
+            b = random.randint(prime // 2, prime - 1)
             func = self.linear_hash(a, b, prime)
             self.hash_functions.append(func)
 
