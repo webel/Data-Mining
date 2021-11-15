@@ -100,7 +100,7 @@ class MinHashing:
     def generate_hash_functions(self, n=100):
         if n > len(primes):
             raise Exception("Not enough prestored primes!")
-        for prime in primes[:n]:
+        for prime in primes[::-1][:n]:
             a = random.randint(prime // 2, prime - 1)
             b = random.randint(prime // 2, prime - 1)
             func = self.linear_hash(a, b, prime)
