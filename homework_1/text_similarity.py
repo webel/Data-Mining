@@ -214,4 +214,9 @@ class LSH:
             buckets = self.insert_lsh_in_bucket(id, lsh_for_signature)
             candidate_pairs = self.get_candidate_pairs(buckets, id=id)
             all_candidate_pairs[id] = candidate_pairs
-        return all_candidate_pairs
+        # Only return the id's that actually have candidate pairs
+        return {
+            id: candidate_pairs
+            for id, candidate_pairs in all_candidate_pairs.items()
+            if candidate_pairs
+        }
