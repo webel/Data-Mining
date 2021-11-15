@@ -188,10 +188,16 @@ def test_simple_lsh():
     rows = 3
     lsh = LSH(n=n_functions, r=rows, b=bands)
     print(
-        f"Approx threshhold is: {lsh.approx_threshold}, with n = {n_functions}, b = {bands} and r = {rows} \n"
+        f"Approx threshhold is: {lsh.approx_threshold:0.2f}, with n = {n_functions}, b = {bands} and r = {rows} \n"
     )
-    candidate_pairs = lsh.get_candidate_pairs_for_signatures(signatures)
-    pprint(candidate_pairs)
+    found_candidate_pairs = lsh.get_candidate_pairs_for_signatures(signatures)
+    print(f"Found candidate pairs: {found_candidate_pairs} \n")
+    for id, candidate_pairs in found_candidate_pairs.items():
+        document = getattr(TestDocuments, id)
+        print(f"{id}: {document}")
+        for candidate_id in candidate_pairs:
+            candidate_document = getattr(TestDocuments, candidate_id)
+            print(f"\t{candidate_id}: {candidate_document}")
 
 
 if __name__ == "__main__":
