@@ -37,76 +37,6 @@ def test_simple():
     return similarity
 
 
-def get_fradulent_email_shingling(force_new=False):
-    directory = "./emails"
-    pickle_path = "fradulent_emails_shingling.pickle"
-    if not force_new and os.path.isfile("fradulent_emails_shingling.pickle"):
-        shingling = Shingling.load_from_file(pickle_path)
-    else:
-        shingling = Shingling(k=6, path=pickle_path)
-        for filename in os.listdir(directory):
-            content = ""
-            with open(f"{directory}/{filename}", "r") as f:
-                content = f.read()
-            shingling.add_document(document=content, document_name=filename)
-        shingling.save_to_file()
-    return shingling
-
-
-@test
-def test_fradulent_email_jaccard():
-    """Get 5 very similar fradulent emails and 5 very disimilar emails"""
-    shingling = get_fradulent_email_shingling()
-
-    doc2hashed = shingling.doc2hashed
-
-    similar_n = 5
-    disimilar_n = 5
-    similar_threshhold = 0.65
-    disimilar_threshhold = 0.05
-    print("Jaccard similarity between pairs")
-    for email1 in doc2hashed.keys():
-        if similar_n == 0 and disimilar_n == 0:
-            break
-        for email2 in doc2hashed.keys():
-            if email1 == email2:
-                continue
-            jacc = CompareSets.jaccard_similarity(
-                doc2hashed[email1], doc2hashed[email2]
-            )
-            if jacc > similar_threshhold and similar_n > 0:
-                print(f"({email1}, {email2}) = {jacc} \n")
-                similar_n -= 1
-            if jacc <= disimilar_threshhold and disimilar_n > 0:
-                print(f"({email1}, {email2}) = {jacc} \n")
-                disimilar_n -= 1
-            if similar_n == 0 and disimilar_n == 0:
-                break
-
-
-@test
-def test_fradulent_email_minhash_signatures():
-    """Create minhash signatures for fradulent emails
-    print a subset of 10, test two known similarities
-    """
-    shingling = get_fradulent_email_shingling(force_new=True)
-    sorted_hashed_shingles = sorted(shingling.all_hashed_shingles)
-    n_functions = 100
-    signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
-        sorted_hashed_shingles, shingling.doc2hashed
-    )
-
-    email1 = signatures["email-3480.txt"]
-    email2 = signatures["email-3374.txt"]
-
-    approx_similarity = CompareSignatures.approximate_jaccard_similarity(email1, email2)
-    print(
-        f"Approx similarity for email-3480.txt and email-3374.txt: {approx_similarity}"
-    )
-
-    return signatures
-
-
 @test
 def test_simple_build_minhash_signatures():
     """Build signatures for our simple sentences"""
@@ -163,8 +93,6 @@ def test_simple_compare_jaccard_and_minhash_signatures():
     print(
         f"Similar Approximate similarity {approx_similarity_similar} with {n_functions} hash functions"
     )
-    # TODO: The disimilar approx is still well over 0 when using less than 150 hash functions
-    # is this normal?! Is there something off with our hash functions?
     print(f"Disimilar Jaccard similarity {jaccard_similarity_disimilar}")
     print(
         f"Disimilar Approximate similarity {approx_similarity_disimilar} with {n_functions} hash functions"
@@ -204,6 +132,4 @@ if __name__ == "__main__":
     test_simple()
     test_simple_build_minhash_signatures()
     test_simple_compare_jaccard_and_minhash_signatures()
-    # test_fradulent_email_jaccard()
-    # test_fradulent_email_minhash_signatures()
     test_simple_lsh()
