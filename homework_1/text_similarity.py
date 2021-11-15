@@ -20,9 +20,9 @@ class Shingling:
     @staticmethod
     def prepare_document(document):
         # The simplest of replacements, newlines and . become a space
-        return document.replace("\n", " ").replace(".", " ")
+        return document.replace("\n", " ").replace(".", " ").lower()
 
-    def add_document(self, document: str, document_name: str) -> list[int]:
+    def add_document(self, document: str, document_name: str) -> set[int]:
         document = self.prepare_document(document)
 
         number_of_shingles = len(document) + 1 - self.k
