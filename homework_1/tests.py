@@ -1,6 +1,6 @@
 import string
+import os
 from pprint import pprint
-
 from text_similarity import LSH, CompareSets, CompareSignatures, MinHashing, Shingling
 from utils import test
 
@@ -25,7 +25,7 @@ class TestDocuments:
 
 
 @test
-def test_simple():
+def test_simple_jaccard():
     """Trivial jaccard test with two very similar sentences"""
     shingling = Shingling(k=3)
     shingling.add_documents(dict(A=TestDocuments.A, B=TestDocuments.B))
@@ -33,8 +33,77 @@ def test_simple():
     B = shingling.doc2hashed["B"]
 
     similarity = CompareSets.jaccard_similarity(A, B)
-    print(f"Similarity between A and B {similarity}")
+    print(f"Similarity between A and B {similarity:0.2f}")
     return similarity
+
+
+def get_fradulent_email_shingling(force_new=True):
+    directory = "./emails"
+    pickle_path = "fradulent_emails_shingling.pickle"
+    if not force_new and os.path.isfile("fradulent_emails_shingling.pickle"):
+        shingling = Shingling.load_from_file(pickle_path)
+    else:
+        shingling = Shingling(k=5, path=pickle_path)
+        for filename in os.listdir(directory):
+            with open(f"{directory}/{filename}", "r") as f:
+                content = f.read()
+            shingling.add_document(document=content, document_name=filename)
+        shingling.save_to_file()
+    return shingling
+
+
+@test
+def test_fradulent_email_jaccard():
+    """Get 5 very similar fradulent emails and 5 very disimilar emails"""
+    shingling = get_fradulent_email_shingling()
+
+    doc2hashed = shingling.doc2hashed
+
+    similar_n = 5
+    disimilar_n = 5
+    similar_threshhold = 0.65
+    disimilar_threshhold = 0.05
+    print("Jaccard similarity between pairs")
+    for email1 in doc2hashed.keys():
+        if similar_n == 0 and disimilar_n == 0:
+            break
+        for email2 in doc2hashed.keys():
+            if email1 == email2:
+                continue
+            jacc = CompareSets.jaccard_similarity(
+                doc2hashed[email1], doc2hashed[email2]
+            )
+            if jacc > similar_threshhold and similar_n > 0:
+                print(f"({email1}, {email2}) = {jacc} \n")
+                similar_n -= 1
+            if jacc <= disimilar_threshhold and disimilar_n > 0:
+                print(f"({email1}, {email2}) = {jacc} \n")
+                disimilar_n -= 1
+            if similar_n == 0 and disimilar_n == 0:
+                break
+
+
+@test
+def test_fradulent_email_minhash_signatures():
+    """Create minhash signatures for fradulent emails
+    test two known documents similarity
+    """
+    shingling = get_fradulent_email_shingling(force_new=True)
+    sorted_hashed_shingles = sorted(shingling.all_hashed_shingles)
+    n_functions = 250
+    signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
+        sorted_hashed_shingles, shingling.doc2hashed
+    )
+
+    email1 = signatures["email-3480.txt"]
+    email2 = signatures["email-3374.txt"]
+
+    approx_similarity = CompareSignatures.approximate_jaccard_similarity(email1, email2)
+    print(
+        f"Approx similarity for email-3480.txt and email-3374.txt: {approx_similarity}"
+    )
+
+    return signatures
 
 
 @test
@@ -44,7 +113,7 @@ def test_simple_build_minhash_signatures():
     for letter, document in TestDocuments.generator():
         shingling.add_document(document=document, document_name=letter)
 
-    n_functions = 20
+    n_functions = 10
     all_hashed, doc2hashed = shingling.all_hashed_shingles, shingling.doc2hashed
     signatures = MinHashing(n_functions=n_functions).build_minhash_signatures(
         all_hashed, doc2hashed
@@ -129,7 +198,9 @@ def test_simple_lsh():
 
 
 if __name__ == "__main__":
-    test_simple()
+    test_simple_jaccard()
     test_simple_build_minhash_signatures()
     test_simple_compare_jaccard_and_minhash_signatures()
     test_simple_lsh()
+    test_fradulent_email_jaccard()
+    test_fradulent_email_minhash_signatures()
