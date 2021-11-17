@@ -86,6 +86,7 @@ def main():
     print(s)
     L1 = prune_non_frequent(all_items, s)
     C2 = generate_candidate_itemsets(L1, 2)
+    # TODO: blir snyggare sen, men bara för test nu för olika k 
     k = 2
     L2 = count_support_and_prune(C2, k, s)
     print(L2)
