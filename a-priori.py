@@ -57,6 +57,8 @@ def count_support_and_prune(C, k, s):
             for comb in bucket_combinations:
                 #print(comb)
                 if comb in C:
+                    # TODO: varför blir det fel här?
+                    #  Den hittar inte alla plus att det blir typ olika varje gång man kör koden?
                     print("this combination was in C! ")
                     print(comb)
                     if comb in itemsets:
