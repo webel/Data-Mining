@@ -1,7 +1,7 @@
 from collections import defaultdict
 from itertools import chain, combinations
-from functools import lru_cache
 from pprint import pprint
+from utils import printProgressBar
 
 
 def flatten(list_of_lists):
@@ -11,6 +11,8 @@ def flatten(list_of_lists):
 class APriori:
     dataset_path: str
     itemset: dict = defaultdict(lambda: 0)
+
+    total_lines: int = 0
 
     def __init__(self, dataset_path, constant_support=None):
         self.dataset_path = dataset_path
@@ -69,6 +71,7 @@ class APriori:
 
     def initial_single_count(self):
         for line in self.get_line():
+            self.total_lines += 1
             for item in line:
                 self.itemset[item] += 1
 
@@ -78,7 +81,7 @@ class APriori:
             if value not in line:
                 return False
         return True
-    
+
     # @lru_cache(maxsize=10)
     # def get_line_combination(self, line, k):
     #     return combinations(line, k)
@@ -91,13 +94,16 @@ class APriori:
         # ~~We need to cast to list as otherwise the generator is consumed on first run through~~
         # We do not cast possible_combinations to list here as it is cheaper to create a new generator
         # for each line. Like 50x cheaper timewise.
-    
-        for line in self.get_line():
+        printProgressBar(0, self.total_lines, prefix=f"Progress for current k={k}:")
+        for index, line in enumerate(self.get_line()):
             possible_combinations = self.get_possible_combinations3(k)
             # ~~TODO> beat 60 seconds for 500~~
             # TODO> beat 2.5 seconds for 500
-            if count != 0 and count % 1000 == 0:
-                print(f"processed {count} lines")
+            if count != 0 and count % 500 == 0:
+                printProgressBar(
+                    index, self.total_lines, prefix=f"Progress for current k={k}:"
+                )
+                # print(f"processed {count} lines")
             # NOTE: Break early for testing purposes
             # if count != 0 and count % 5000 == 0:
             #     break
@@ -139,10 +145,10 @@ class APriori:
             self.count_support(current_k)
 
             print(f"k={current_k} - before pruning. Currently {len(self.itemset)} keys")
-            #print(self.itemset)
+            # print(self.itemset)
             self.prune_non_frequent()
             print(f"k={current_k} - after pruning. Currently {len(self.itemset)} keys")
-            #print(self.itemset)
+            # print(self.itemset)
         return self.itemset
 
     def naive_count_support(self, k):
@@ -179,5 +185,5 @@ def real_test():
 
 
 if __name__ == "__main__":
-    #simple_test()
+    # simple_test()
     real_test()
