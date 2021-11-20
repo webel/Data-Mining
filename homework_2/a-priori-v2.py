@@ -1,17 +1,33 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 from itertools import chain, combinations
 from pprint import pprint
-from utils import printProgressBar
+from utils import printProgressBar, test
+
+
+def dprint(ddict):
+    """Print a defaultdict without the type
+    Slightly faster than casting to dict
+    """
+    print(dict.__repr__(ddict))
+
+
+def iprint(name, itemset):
+    """Print an itemset"""
+    print(name, end=": "), dprint(itemset)
 
 
 def flatten(list_of_lists):
     return chain.from_iterable(list_of_lists)
 
 
+class Transaction:
+    pass
+
+
 class APriori:
     dataset_path: str
+    
     itemset: dict = defaultdict(lambda: 0)
-
     total_lines: int = 0
 
     def __init__(self, dataset_path, constant_support=None):
@@ -22,7 +38,7 @@ class APriori:
         """Get a line from our datafile one at a time"""
         with open(self.dataset_path, "r") as f:
             for line in f:
-                yield sorted(map(int, line.split()))
+                yield set(map(int, line.split()))
 
     def set_support_threshhold(self):
         """Calculate depending on number of unique items in our itemset"""
@@ -35,39 +51,40 @@ class APriori:
         for key in to_delete:
             del self.itemset[key]
 
-    def get_possible_combinations(self, k):
+    def check_subcandidates(self, candidate, k):
+        """Check that subcombinations of a candidate are indeed in our previous itemset"""
+        return all(
+            subcandidate in self.itemset
+            for subcandidate in combinations(candidate, k - 1)
+        )
+
+    def get_next_candidates(self, k):
+        """Get the next candidates from the previous large itemset
+
+        We get the keys from itemset with list(), flatten the list of keys and create a set.
+        Itemset:   {('A', 'C'): 2, ('B', 'C'): 2, ('B', 'E'): 3, ('C', 'E'): 2}
+        Keys:   -> [('A', 'C'), ('B', 'C'), ('B', 'E'), ('C', 'E')]
+        Set:    -> ('A', 'B', 'E', 'C')
+        Sorted: -> ('A', 'B', 'C', 'E')
+
+        Given the sorted single items we create combinations, and check for each combination
+        that it's subcombinations exist in our previous large itemset.
+        """
         keys = list(self.itemset)
         if k == 2:
-            return combinations(keys, 2)
-        # Join self.itemset with itself
-        key_sets = list(map(set, sorted(keys)))
-        combos = set()
-        for i_item in key_sets:
-            for j_item in key_sets[1:]:
-                union = sorted(i_item.union(j_item))
-                if len(union) == k:
-                    combos.add(tuple(union))
-        return combos
-
-    def get_possible_combinations2(self, k):
-        keys = sorted(list(self.itemset))
-        if k == 2:
-            return combinations(keys, 2)
-        combos = set()
-        for item in combinations(keys, k - 1):
-            # TODO check necessary sort
-            combo = sorted(set(flatten(item)))
-            if len(combo) == k:
-                combos.add(tuple(combo))
-        return combos
-
-    def get_possible_combinations3(self, k):
-        keys = sorted(list(self.itemset))
-        if k == 2:
-            return combinations(keys, 2)
-        keys = set(flatten(keys))
-        # TODO check sub-combinations indeed in self.itemset
-        return combinations(keys, k)
+            # If k is 2, we don't need to check subsets
+            return combinations(sorted(keys), k)
+        else:
+            items = sorted(set(flatten(keys)))
+            # print(keys)
+            potential_candidates = combinations(items, k)
+            # Now we need to check all the subsets of a possible candidate
+            candidates = [
+                candidate
+                for candidate in potential_candidates
+                if self.check_subcandidates(candidate, k)
+            ]
+            return candidates
 
     def initial_single_count(self):
         for line in self.get_line():
@@ -75,115 +92,140 @@ class APriori:
             for item in line:
                 self.itemset[item] += 1
 
-    def check_combination_in_line(self, line, combination):
-        # PROBLEM-BARNET
-        for value in combination:
-            if value not in line:
-                return False
-        return True
 
-    # @lru_cache(maxsize=10)
-    # def get_line_combination(self, line, k):
-    #     return combinations(line, k)
-
-    def count_support(self, k):
+    def get_candidates_for_k(self, k, verbose=True):
         """Count the number of item combinations for k per line in datafile"""
-        next_itemset = defaultdict(lambda: 0)
         count = 0
+        verbose and printProgressBar(
+            0, self.total_lines, prefix=f"Progress for current k={k}:"
+        )
 
-        # ~~We need to cast to list as otherwise the generator is consumed on first run through~~
-        # We do not cast possible_combinations to list here as it is cheaper to create a new generator
-        # for each line. Like 50x cheaper timewise.
-        printProgressBar(0, self.total_lines, prefix=f"Progress for current k={k}:")
+        candidates = self.get_next_candidates(k)
+        # NOTE: This looks crazy but it works
+        next_itemset = Counter(candidates)
+        next_itemset.subtract(next_itemset)
+        for candidate in candidates:
+            next_itemset[candidate] = 0
         for index, line in enumerate(self.get_line()):
-            possible_combinations = self.get_possible_combinations3(k)
-            # ~~TODO> beat 60 seconds for 500~~
-            # TODO> beat 2.5 seconds for 500
-            if count != 0 and count % 500 == 0:
-                printProgressBar(
+            if count != 0 and count % 100 == 0:
+                verbose and printProgressBar(
                     index, self.total_lines, prefix=f"Progress for current k={k}:"
                 )
-                # print(f"processed {count} lines")
-            # NOTE: Break early for testing purposes
-            # if count != 0 and count % 5000 == 0:
-            #     break
-            # NOTE: This is sorted, I've tested, although could do one assert on one item
-            line_combinations = combinations(line, k)
+            # NOTE: Yes, we're getting all the combinations and incrementing 
+            # but this version takes 0.41 seconds for 100
+            # For the full dataset it takes about 75s on my M1 for a constant treshhold of 50
+            line_combinations = combinations(sorted(line), k)
             for combination in line_combinations:
-                if combination in possible_combinations:
+                if combination in next_itemset:
                     next_itemset[combination] += 1
 
-            # NOTE: tested switching and this takes double the time
-            # for combination in possible_combinations:
-            #     if combination in line_combinations:
-            #         next_itemset[combination] += 1
+            # NOTE: For 100 items takes 5s
+            # to_increment = [
+            #     candidate for candidate in candidates if line.issuperset(candidate)
+            # ]
+            # for candidate in to_increment:
+            #     next_itemset[candidate] += 1
 
-            # for combination in possible_combinations:
-            # NOTE This check stands for 95% of the time and takes an ungodly amount of time
-            # You can see this by running python -m cProfile filename.py
-            #     exists = self.check_combination_in_line(line, combination)
-            #     if exists:
-            #         next_itemset[combination] += 1
+            # NOTE: For 100 items takes 17s
+            # line_combinations = combinations(line, k)
+            # for combination in line_combinations:
+            #     if combination in candidates:
+            #         next_itemset[combination] +=1
+
+            # increment_dict = self._check_candidates_in_line(line, candidates, k)
+            # next_itemset = dict(Counter(next_itemset) + Counter(increment_dict))
             count += 1
 
+        verbose and printProgressBar(
+            index + 1, self.total_lines, prefix=f"Progress for current k={k}:"
+        )
         self.itemset = next_itemset
 
-    def get_candidates(self, k):
-        """Build candidate itemset for a provided k"""
-        print("Initial count...")
+    def get_candidates(self, k, verbose=True):
+        """Build large itemset for a provided k"""
+        verbose and print("Initial count...")
+        self.itemset = defaultdict(lambda: 0)
         self.initial_single_count()
 
         if not self.support:
-            print("Setting threshhold...")
+            verbose and print("Setting threshhold...")
             self.set_support_threshhold()
 
-        print("Pruning singletones...")
+        verbose and print("Pruning singletones...")
+        verbose and print(
+            f"Singletons before pruning. Currently {len(self.itemset)} keys"
+        )
         self.prune_non_frequent()
+        verbose and print(
+            f"Singletons after pruning. Currently {len(self.itemset)} keys"
+        )
 
         for current_k in range(2, k + 1):
-            print("Count support...")
-            self.count_support(current_k)
+            if not self.itemset:
+                break
+            verbose and print(f"Get itemsets for k={current_k}...")
+            self.get_candidates_for_k(current_k)
 
-            print(f"k={current_k} - before pruning. Currently {len(self.itemset)} keys")
-            # print(self.itemset)
+            verbose and print(
+                f"k={current_k} - before pruning. Currently {len(self.itemset)} keys"
+            )
             self.prune_non_frequent()
-            print(f"k={current_k} - after pruning. Currently {len(self.itemset)} keys")
-            # print(self.itemset)
-        return self.itemset
-
-    def naive_count_support(self, k):
-        """Count the number of item combinations for k per line in datafile"""
-        next_itemset = defaultdict(lambda: 0)
-        for line in self.get_line():
-            possible_combinations = combinations(line, k)
-            for combination in possible_combinations:
-                next_itemset[combination] += 1
-        self.itemset = next_itemset
-
-    def naive_get_candidates(self, k):
-        """Build candidate itemset for a provided k"""
-        for current_k in range(1, k + 1):
-            self.naive_count_support(current_k)
-            if not self.support:
-                self.set_support_threshhold()
-            self.prune_non_frequent()
+            verbose and print(
+                f"k={current_k} - after pruning. Currently {len(self.itemset)} keys"
+            )
         return self.itemset
 
 
-def simple_test():
+@test
+def test_get_next_candidates():
+    """Check that the next candidates are expected given a known current large set"""
+    large_itemset = {("A", "C"): 2, ("B", "C"): 2, ("B", "E"): 3, ("C", "E"): 2}
+    print("Large itemset:")
+    pprint(large_itemset)
+    a_priori = APriori("", 1)
+    a_priori.itemset = large_itemset
+    candidates = a_priori.get_next_candidates(k=3)
+    print("Candidates:")
+    pprint(candidates)
+    # Happens to be same as the final L
+    assert [("B", "C", "E")] == candidates
+
+
+@test
+def test_toy_dataset_large_itemsets():
+    """Check that the large itemsets are as expected for k's 1 through 4 for our toy dataset"""
     a_priori = APriori("simple_test.dat", 1)
     candidates = a_priori.get_candidates(3)
-    assert len(candidates.keys()) == 1, "should only have one set of keys"
-    assert candidates[(2, 3, 5)] == 2, "should be 2"
-    print(candidates)
+    L1 = a_priori.get_candidates(1)
+    iprint("L1", L1)
+    candidates = {1: 2, 3: 3, 2: 3, 5: 3}
+    assert len(L1) == len(candidates)
+    assert candidates == L1
+
+    L2 = a_priori.get_candidates(2)
+    iprint("L2", L2)
+    candidates = {(1, 3): 2, (2, 3): 2, (2, 5): 3, (3, 5): 2}
+    assert candidates == L2
+
+    L3 = a_priori.get_candidates(3)
+    iprint("L3", L3)
+    candidates = {(2, 3, 5): 2}
+    assert candidates == L3
+
+    L4 = a_priori.get_candidates(4)
+    iprint("L4", L4)
+    candidates = {}
+    assert candidates == L4
 
 
-def real_test():
+@test
+def test_real_transactions():
     a_priori = APriori("T10I4D100K.dat")
-    candidates = a_priori.get_candidates(3)
-    pprint(candidates)
+    candidates = a_priori.get_candidates(3, verbose=True)
+    iprint("L3", candidates)
 
 
 if __name__ == "__main__":
-    # simple_test()
-    real_test()
+    test_real_transactions()
+    # test_get_next_candidates()
+    #test_toy_dataset_large_itemsets()
