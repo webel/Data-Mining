@@ -43,15 +43,16 @@ class APriori:
         self.prune_non_frequent(k=1)
 
     def prune_non_frequent(self, k):
-        # TODO can be optimized further
         """Prune the unnecessary items from our itemset, i.e. the items that have
         a lower count than a certain threshhold"""
         logging.debug(f"Before pruning: {len(self.itemsets[k])} items")
-        to_delete = [
-            key for key in self.itemsets[k] if self.itemsets[k][key] <= self.support
-        ]
-        for key in to_delete:
-            del self.itemsets[k][key]
+        self.itemsets[k] = Counter(
+            {
+                item: count
+                for item, count in self.itemsets[k].items()
+                if count > self.support
+            }
+        )
         logging.debug(f"After pruning: {len(self.itemsets[k])} items")
 
     def check_subcandidates(self, candidate, k):
@@ -165,6 +166,7 @@ def test_toy_dataset_large_itemsets():
         assert large_itemsets[index - 1] == itemset
 
     print("No assertion error, they are as expected!")
+
 
 @test
 def test_large_dataset():
