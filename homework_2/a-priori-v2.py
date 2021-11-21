@@ -1,5 +1,5 @@
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 from itertools import combinations
 
 from utils import flatten, iprint, progress, test, setup_logging
@@ -7,16 +7,17 @@ from utils import flatten, iprint, progress, test, setup_logging
 
 class APriori:
     dataset_path: str
-    # TODO keep intermediate
-    itemset: Counter
+    itemsets: defaultdict(Counter)
     n_transactions: int
     support = int
 
     def __init__(self, dataset_path, constant_support=None):
         self.dataset_path = dataset_path
-        self.itemset = Counter()
+        self.itemsets = defaultdict(Counter)
         self.n_transactions = 0
         self.support = constant_support
+
+        self.first_pass()
 
     def get_line(self):
         """Get a line from our datafile one at a time"""
@@ -25,21 +26,42 @@ class APriori:
                 yield map(int, line.split())
 
     def set_support_threshhold(self):
-        """Calculate depending on number of transactions in our itemset"""
+        """Calculate depending on number of transactions in our dataset"""
         self.support = self.n_transactions * 0.01
+        logging.debug(f"Set threshhold to {self.support}")
 
-    def prune_non_frequent(self):
+    def first_pass(self):
+        logging.debug("=== FIRST PASS ===")
+        logging.debug("Initial count...")
+        for line in self.get_line():
+            self.n_transactions += 1
+            for item in line:
+                self.itemsets[1][item] += 1
+        if not self.support:
+            logging.debug("Setting threshhold...")
+            self.set_support_threshhold()
+        self.prune_non_frequent(k=1)
+
+    def prune_non_frequent(self, k):
         # TODO can be optimized further
         """Prune the unnecessary items from our itemset, i.e. the items that have
         a lower count than a certain threshhold"""
-        to_delete = [key for key in self.itemset if self.itemset[key] <= self.support]
+        logging.debug(f"Before pruning: {len(self.itemsets[k])} items")
+        to_delete = [
+            key for key in self.itemsets[k] if self.itemsets[k][key] <= self.support
+        ]
         for key in to_delete:
-            del self.itemset[key]
+            del self.itemsets[k][key]
+        logging.debug(f"After pruning: {len(self.itemsets[k])} items")
 
     def check_subcandidates(self, candidate, k):
-        """Check that subcombinations of a candidate are indeed in our previous itemset"""
+        """Check that subcombinations of a candidate are indeed in our previous itemset
+        Make all sub-combinations of the candidate, e.g.
+        ('A', 'B', 'C') -> ('A', 'B'), ('A', 'C'), ('B', 'C')
+        And check if all these exist in itemset[k-1]
+        """
         return all(
-            subcandidate in self.itemset
+            subcandidate in self.itemsets[k - 1]
             for subcandidate in combinations(candidate, k - 1)
         )
 
@@ -56,7 +78,7 @@ class APriori:
         Given the sorted single items we create combinations, and check for each combination
         that it's subcombinations exist in our previous large itemset.
         """
-        keys = list(self.itemset)
+        keys = list(self.itemsets[k - 1])
         if k == 2:
             # If k is 2, we don't need to check subsets
             yield from combinations(sorted(keys), k)
@@ -70,12 +92,6 @@ class APriori:
                 if self.check_subcandidates(candidate, k)
             )
             yield from candidates
-
-    def initial_single_count(self):
-        for line in self.get_line():
-            self.n_transactions += 1
-            for item in line:
-                self.itemset[item] += 1
 
     def get_itemset_for_k(self, k):
         """Count the number of item combinations for k per line in datafile"""
@@ -99,49 +115,32 @@ class APriori:
                     next_itemset[combination] += 1
 
         info_log and progress(
-            index + 1, self.n_transactions, prefix=f"Progress for k={k}:"
+            index + 1, self.n_transactions, prefix=f"Progress for k={k}:", printEnd="\n"
         )
-        self.itemset = next_itemset
+        self.itemsets[k] = next_itemset
 
-    def get_large_itemset(self, k, verbose=False):
+    def get_large_itemset(self, k):
         """Build large itemset for a provided k"""
-        logging.debug("=== FIRST PASS ===")
-        logging.debug("Initial count...")
-        # TODO don't reinit here
-        self.itemset = Counter()
-        self.initial_single_count()
-
-        if not self.support:
-            logging.debug("Setting threshhold...")
-            self.set_support_threshhold()
-
-        logging.debug(f"Singletons before pruning: {len(self.itemset)} items")
-        logging.debug("Pruning singletones...")
-        self.prune_non_frequent()
-        logging.debug(f"Singletons after pruning: {len(self.itemset)} items")
-
         for current_k in range(2, k + 1):
             logging.debug(f"\n === PASS k={current_k} ===")
             logging.debug(f"Get itemsets for k={current_k}...")
             self.get_itemset_for_k(current_k)
 
-            if not self.itemset:
-                logging.debug("No itemsets, breaking.")
+            if not self.itemsets[current_k]:
+                logging.debug("No itemsets for, breaking.")
                 break
 
-            logging.debug(f"Before pruning: {len(self.itemset)} items")
-            self.prune_non_frequent()
-            logging.debug(f"After pruning: {len(self.itemset)} items")
-        return self.itemset
+            self.prune_non_frequent(k=current_k)
+        return self.itemsets
 
 
 @test
 def test_get_next_candidates():
     """Check that the next candidates are expected given a known current large set"""
     large_itemset = {(1, 3): 2, (2, 3): 2, (2, 5): 3, (3, 5): 2}
-    iprint("Large itemset", large_itemset, True, False)
-    a_priori = APriori("", 1)
-    a_priori.itemset = large_itemset
+    iprint("Large itemset (L2)", large_itemset, True)
+    a_priori = APriori("simple_test.dat", 1)
+    a_priori.itemsets[2] = large_itemset
     candidates = list(a_priori.get_next_candidates(k=3))
     print("Candidates:", candidates)
     # Happens to be same as the final L
@@ -151,40 +150,32 @@ def test_get_next_candidates():
 @test
 def test_toy_dataset_large_itemsets():
     """Check that the large itemsets are as expected for k's 1 through 4 for our toy dataset"""
-    a_priori = APriori("simple_test.dat", 1)
-    L1 = a_priori.get_large_itemset(1)
-    iprint("L1", L1, True)
-    candidates = {1: 2, 3: 3, 2: 3, 5: 3}
-    assert len(L1) == len(candidates)
-    assert candidates == L1
+    a_priori = APriori("simple_test.dat", constant_support=1)
+    itemsets = a_priori.get_large_itemset(4)
+    large_itemsets = [
+        {1: 2, 3: 3, 2: 3, 5: 3},
+        {(1, 3): 2, (2, 3): 2, (2, 5): 3, (3, 5): 2},
+        {(2, 3, 5): 2},
+        {},
+    ]
 
-    L2 = a_priori.get_large_itemset(2)
-    iprint("L2", L2)
-    candidates = {(1, 3): 2, (2, 3): 2, (2, 5): 3, (3, 5): 2}
-    assert candidates == L2
+    for index, itemset in itemsets.items():
+        name = f"L{index}"
+        iprint(name, itemset)
+        assert large_itemsets[index - 1] == itemset
 
-    L3 = a_priori.get_large_itemset(3)
-    iprint("L3", L3)
-    candidates = {(2, 3, 5): 2}
-    assert candidates == L3
-
-    L4 = a_priori.get_large_itemset(4)
-    iprint("L4", L4)
-    candidates = {}
-    assert candidates == L4
-
+    print("No assertion error, they are as expected!")
 
 @test
 def test_large_dataset():
     """Test itemset generation for the provided dataset of the homework."""
     a_priori = APriori("T10I4D100K.dat")
     candidates = a_priori.get_large_itemset(3)
-    iprint("L3", candidates, True, False)
+    iprint("L3", candidates[3], True)
 
 
 if __name__ == "__main__":
     setup_logging()
-
-    test_large_dataset()
     test_get_next_candidates()
     test_toy_dataset_large_itemsets()
+    test_large_dataset()
