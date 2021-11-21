@@ -29,12 +29,14 @@ def setup_logging():
     parser.add_argument(
         "-log",
         "--loglevel",
-        default="info",
-        help="Provide logging level. Example --loglevel debug, default=info",
+        default="warning",
+        help="Provide logging level. Example --loglevel debug, default=warning",
     )
     args = parser.parse_args()
-
-    logging.basicConfig(level=args.loglevel.upper(), format="%(message)s")
+    try:
+        logging.basicConfig(level=args.loglevel.upper(), format="%(message)s")
+    except ValueError:
+        print("Loglevel not recognized, proceeding without.")
 
 
 def test(func):
@@ -61,7 +63,7 @@ def dprint(ddict):
     print(terminal.END)
 
 
-def iprint(name, itemset, leading_new_line=False, trailing_new_line=True):
+def iprint(name, itemset, leading_new_line=False, trailing_new_line=False):
     """Print an itemset"""
     if leading_new_line:
         print("\n")
