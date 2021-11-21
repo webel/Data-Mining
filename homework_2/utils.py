@@ -1,4 +1,14 @@
 import time
+from itertools import chain
+
+
+def flatten(list_of_lists):
+    """Flatten an iterable of iterables
+    Borrowed straight from itertool recipes: https://docs.python.org/3/library/itertools.html
+    """
+    return chain.from_iterable(list_of_lists)
+
+
 class terminal:
     PURPLE = "\033[95m"
     CYAN = "\033[96m"
@@ -20,12 +30,42 @@ def test(func):
         start_time = time.time()
         func(*args, **kwargs)
         end_time = time.time()
-        print(f"\n{terminal.BOLD}Timed: {(end_time - start_time):0.6f} seconds {terminal.END}")
+        print(
+            f"\n{terminal.BOLD}Timed: {(end_time - start_time):0.6f} seconds {terminal.END}"
+        )
 
     return func_with_name_and_docstring
 
+
+def dprint(ddict):
+    """Print a defaultdict without the type
+    Slightly faster than casting to dict
+    """
+    print(terminal.PURPLE, end="")
+    print(dict.__repr__(ddict))
+    print(terminal.END)
+
+
+def iprint(name, itemset, leading_new_line=False, trailing_new_line=True):
+    """Print an itemset"""
+    if leading_new_line:
+        print("\n")
+    print(f"{terminal.UNDERLINE}{name}{terminal.END}", end=": "), dprint(itemset)
+    if trailing_new_line:
+        print("\n")
+
+
 # Print iterations progress
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 50, fill = '█', printEnd = "\r"):
+def progress(
+    iteration,
+    total,
+    prefix="",
+    suffix="",
+    decimals=1,
+    length=50,
+    fill="█",
+    printEnd="\r",
+):
     """
     Borrowed straight from: https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
 
@@ -42,8 +82,8 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    bar = fill * filledLength + "-" * (length - filledLength)
+    print(f"\r{prefix} |{bar}| {percent}% {suffix}", end=printEnd)
     # Print New Line on Complete
-    if iteration == total: 
+    if iteration == total:
         print()
