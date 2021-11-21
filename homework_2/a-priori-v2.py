@@ -12,11 +12,13 @@ class APriori:
     n_transactions: int
     support = int
 
-    def __init__(self, dataset_path, constant_support=None):
+    def __init__(self, dataset_path, support=0.01):
         self.dataset_path = dataset_path
         self.itemsets = defaultdict(Counter)
         self.n_transactions = 0
-        self.support = constant_support
+
+        assert support > 0 and support <= 1, "Support should be between 0 and 1"
+        self.support = support
 
         self.first_pass()
 
@@ -28,7 +30,7 @@ class APriori:
 
     def set_support_threshhold(self):
         """Calculate depending on number of transactions in our dataset"""
-        self.support = self.n_transactions * 0.01
+        self.support = self.n_transactions * self.support
         logging.debug(f"Set threshhold to {self.support}")
 
     def first_pass(self):
@@ -38,9 +40,8 @@ class APriori:
             self.n_transactions += 1
             for item in line:
                 self.itemsets[1][tuple([item])] += 1
-        if not self.support:
-            logging.debug("Setting threshhold...")
-            self.set_support_threshhold()
+        logging.debug("Setting threshhold...")
+        self.set_support_threshhold()
         self.prune_non_frequent(k=1)
 
     def prune_non_frequent(self, k):
@@ -239,7 +240,7 @@ def test_get_next_candidates():
 @test
 def test_toy_dataset_large_itemsets():
     """Check that the large itemsets are as expected for k's 1 through 4 for our toy dataset"""
-    a_priori = APriori("simple_test.dat", constant_support=1)
+    a_priori = APriori("simple_test.dat", support=0.4)
     itemsets = a_priori.get_large_itemset(4)
     large_itemsets = [
         {(1,): 2, (3,): 3, (2,): 3, (5,): 3},
@@ -278,7 +279,7 @@ def test_simple_rule_generation():
 @test
 def test_toy_dataset_itemset_and_rule_generation():
     """Tests our dataset from itemset to rule generation"""
-    a_priori = APriori("simple_test.dat", constant_support=1.99)
+    a_priori = APriori("simple_test.dat", support=0.4)
     itemsets = a_priori.get_large_itemset(3)
 
     for k, itemset in itemsets.items():
