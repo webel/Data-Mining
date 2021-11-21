@@ -1,6 +1,8 @@
+import logging
 from collections import Counter
 from itertools import combinations
-from utils import progress, test, iprint, flatten
+
+from utils import flatten, iprint, progress, test, setup_logging
 
 
 class APriori:
@@ -75,11 +77,10 @@ class APriori:
             for item in line:
                 self.itemset[item] += 1
 
-    def get_itemset_for_k(self, k, verbose=True):
+    def get_itemset_for_k(self, k):
         """Count the number of item combinations for k per line in datafile"""
-        verbose and progress(
-            0, self.n_transactions, prefix=f"Progress for k={k}:"
-        )
+        info_log = logging.INFO >= logging.root.level
+        info_log and progress(0, self.n_transactions, prefix=f"Progress for k={k}:")
 
         candidates = self.get_next_candidates(k)
         # NOTE: This looks crazy but it works
@@ -87,7 +88,7 @@ class APriori:
         next_itemset.subtract(next_itemset)
         for index, line in enumerate(self.get_line()):
             if index != 0 and index % 5000 == 0:
-                verbose and progress(
+                info_log and progress(
                     index, self.n_transactions, prefix=f"Progress for k={k}:"
                 )
             # NOTE: Yes, we're getting all the combinations and incrementing
@@ -97,44 +98,40 @@ class APriori:
                 if combination in next_itemset:
                     next_itemset[combination] += 1
 
-        verbose and progress(
+        info_log and progress(
             index + 1, self.n_transactions, prefix=f"Progress for k={k}:"
         )
         self.itemset = next_itemset
 
     def get_large_itemset(self, k, verbose=False):
         """Build large itemset for a provided k"""
-        verbose and print("Initial count...")
+        logging.debug("=== FIRST PASS ===")
+        logging.debug("Initial count...")
         # TODO don't reinit here
         self.itemset = Counter()
         self.initial_single_count()
 
         if not self.support:
-            verbose and print("Setting threshhold...")
+            logging.debug("Setting threshhold...")
             self.set_support_threshhold()
 
-        verbose and print("Pruning singletones...")
-        verbose and print(
-            f"Singletons before pruning. Currently {len(self.itemset)} keys"
-        )
+        logging.debug(f"Singletons before pruning: {len(self.itemset)} items")
+        logging.debug("Pruning singletones...")
         self.prune_non_frequent()
-        verbose and print(
-            f"Singletons after pruning. Currently {len(self.itemset)} keys"
-        )
+        logging.debug(f"Singletons after pruning: {len(self.itemset)} items")
 
         for current_k in range(2, k + 1):
-            if not self.itemset:
-                break
-            verbose and print(f"Get itemsets for k={current_k}...")
+            logging.debug(f"\n === PASS k={current_k} ===")
+            logging.debug(f"Get itemsets for k={current_k}...")
             self.get_itemset_for_k(current_k)
 
-            verbose and print(
-                f"k={current_k} - before pruning. Currently {len(self.itemset)} keys"
-            )
+            if not self.itemset:
+                logging.debug("No itemsets, breaking.")
+                break
+
+            logging.debug(f"Before pruning: {len(self.itemset)} items")
             self.prune_non_frequent()
-            verbose and print(
-                f"k={current_k} - after pruning. Currently {len(self.itemset)} keys"
-            )
+            logging.debug(f"After pruning: {len(self.itemset)} items")
         return self.itemset
 
 
@@ -186,6 +183,8 @@ def test_large_dataset():
 
 
 if __name__ == "__main__":
+    setup_logging()
+
     test_large_dataset()
     test_get_next_candidates()
     test_toy_dataset_large_itemsets()

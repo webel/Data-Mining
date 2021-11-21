@@ -1,12 +1,7 @@
+import argparse
+import logging
 import time
 from itertools import chain
-
-
-def flatten(list_of_lists):
-    """Flatten an iterable of iterables
-    Borrowed straight from itertool recipes: https://docs.python.org/3/library/itertools.html
-    """
-    return chain.from_iterable(list_of_lists)
 
 
 class terminal:
@@ -20,6 +15,26 @@ class terminal:
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
     END = "\033[0m"
+
+
+def flatten(list_of_lists):
+    """Flatten an iterable of iterables
+    Borrowed straight from itertool recipes: https://docs.python.org/3/library/itertools.html
+    """
+    return chain.from_iterable(list_of_lists)
+
+
+def setup_logging():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-log",
+        "--loglevel",
+        default="info",
+        help="Provide logging level. Example --loglevel debug, default=info",
+    )
+    args = parser.parse_args()
+
+    logging.basicConfig(level=args.loglevel.upper(), format="%(message)s")
 
 
 def test(func):
