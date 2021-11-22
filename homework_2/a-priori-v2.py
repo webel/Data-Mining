@@ -242,7 +242,7 @@ class GenerateRules:
 def test_get_next_candidates():
     """Check that the next candidates are expected given a known current large set"""
     large_itemset = {(1, 3): 2, (2, 3): 2, (2, 5): 3, (3, 5): 2}
-    iprint("Large itemset (L2)", large_itemset, True)
+    iprint("Large itemset (L2)", large_itemset)
     candidates = list(APriori.get_next_candidates(large_itemset))
     print("Candidates:", candidates)
     # Happens to be same as the final L
@@ -274,7 +274,7 @@ def test_itemsets_for_large_dataset():
     """Test itemset generation for the provided dataset of the homework."""
     a_priori = APriori("T10I4D100K.dat")
     candidates = a_priori.get_large_itemset(3)
-    iprint("L3", candidates[3], True)
+    iprint("L3", candidates[3])
 
 
 @test
