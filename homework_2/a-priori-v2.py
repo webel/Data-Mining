@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import total_ordering
 import logging
 from collections import Counter, defaultdict
 from itertools import combinations
@@ -68,8 +69,8 @@ class APriori:
             subcandidate in itemset for subcandidate in combinations(candidate, k - 1)
         )
 
-    @classmethod
-    def get_next_candidates(cls, itemset):
+    @staticmethod
+    def get_next_candidates(itemset):
         """Get the next candidates from the previous large itemset
         Known as the 'apriori-gen' step in the paper.
 
@@ -97,7 +98,7 @@ class APriori:
             candidates = (
                 candidate
                 for candidate in potential_candidates
-                if cls.check_subcandidates(itemset, candidate, k)
+                if APriori.check_subcandidates(itemset, candidate, k)
             )
             yield from candidates
 
@@ -132,11 +133,11 @@ class APriori:
         for current_k in range(2, k + 1):
             logging.debug(f"\n === PASS k={current_k} ===")
             logging.debug(f"Get itemsets for k={current_k}...")
-            self.get_itemset_for_k(current_k)
 
-            if not self.itemsets[current_k]:
-                logging.debug("No itemsets for, breaking.")
+            if not self.itemsets[current_k - 1]:
+                logging.debug("No previous large itemset, breaking.")
                 break
+            self.get_itemset_for_k(current_k)
 
             self.prune_non_frequent(k=current_k)
         return self.itemsets
@@ -171,7 +172,11 @@ class Rule:
         """The rule is less than another rule if it's confidence is less than
         Secondly, sort on length of left
         """
-        return (len(self), self.confidence, len(self.left)) < (len(self), other.confidence, len(other.left))
+        return (len(self), self.confidence, len(self.left)) < (
+            len(self),
+            other.confidence,
+            len(other.left),
+        )
 
     def __len__(self):
         """The length of a rule is the length of the left side plus the right side"""
@@ -209,8 +214,8 @@ class GenerateRules:
     ):
         """Recursively generate rules as described in the paper."""
         if k <= (len(h_m[0]) + 1):
+            # If the right handside is larger or equal to our k, we stop
             return
-
         h_m_next = list(APriori.get_next_candidates(h_m))
         for right in h_m_next:
             yielded = self._check_right_with_itemset(itemset, right)
@@ -284,7 +289,7 @@ def test_simple_rule_generation():
     rules = GenerateRules(confidence=1, itemsets=itemsets, n_transactions=3).get()
     iprint("L1", itemsets[1])
     iprint("L2", itemsets[2])
-    for rule in rules:
+    for rule in sorted(rules):
         print(rule)
 
 
@@ -298,18 +303,19 @@ def test_toy_dataset_itemset_and_rule_generation():
         iprint(k, itemset)
 
     rules = GenerateRules(
-        confidence=0.75,
+        confidence=0.5,
         itemsets=itemsets,
         n_transactions=a_priori.n_transactions,
     ).get()
-    for rule in rules:
+    print("Rules: ")
+    for rule in sorted(rules, reverse=True):
         print(rule)
 
 
 @test
 def test_large_dataset_itemset_and_rule_generation():
     """Tests the provided dataset from itemset to rule generation"""
-    a_priori = APriori("T10I4D100K.dat")
+    a_priori = APriori("T10I4D100K.dat", support=0.01)
     itemsets = a_priori.get_large_itemset(3)
 
     iprint("L3", itemsets[3])
@@ -319,7 +325,7 @@ def test_large_dataset_itemset_and_rule_generation():
         itemsets=itemsets,
         n_transactions=a_priori.n_transactions,
     ).get()
-    for rule in rules:
+    for rule in sorted(rules, reverse=True):
         print(rule)
 
 
