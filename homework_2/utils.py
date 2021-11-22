@@ -44,6 +44,7 @@ def test(func):
         print("\n")
         print(f"{terminal.BOLD} => {func.__name__} {terminal.END}")
         print(f"{terminal.DARKCYAN}{func.__doc__}{terminal.END}")
+        print("\n")
         start_time = time.time()
         func(*args, **kwargs)
         end_time = time.time()
