@@ -143,27 +143,39 @@ class APriori:
 
 
 @dataclass
+@total_ordering
 class Rule:
     """Represent a rule of the form X -> Y where X and Y are itemsets from the first part of the Apriori algorithm.
 
     Arguments:
     left            -- the left part of the rule
     right           -- the right part of the rule
-    itemset_count   -- count of left and right itemset (i.e. (A, B) -> (C), count for (A, B, C))
-    left_count      -- the left itemset count
+    confidence      -- The conditional probability of X -> Y, P(Y|X)
+    left_count      -- The probability of the union of X and Y, P(X and Y)
     """
 
     left: tuple
     right: tuple
-    """The conditional probability of X -> Y, P(Y|X)"""
     confidence: float
-    """The probability of the union of X and Y, P(X and Y)"""
     support: float
 
     def __str__(self):
         """How to stringify a rule"""
-        # TODO add confidence and support info here
-        return f"{set(self.left)} -> {set(self.right)}"
+        return f"{set(self.left)} -> {set(self.right)} (Confidence: {self.confidence:0.2f}. Support: {self.support:0.2f})"
+
+    def __eq__(self, other):
+        """Two rules are equal if their left and right are equal"""
+        return (self.left, self.right) == (other.left, other.right)
+
+    def __lt__(self, other):
+        """The rule is less than another rule if it's confidence is less than
+        Secondly, sort on length of left
+        """
+        return (len(self), self.confidence, len(self.left)) < (len(self), other.confidence, len(other.left))
+
+    def __len__(self):
+        """The length of a rule is the length of the left side plus the right side"""
+        return len(self.left) + len(self.right)
 
 
 class GenerateRules:
