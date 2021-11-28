@@ -2,12 +2,12 @@ import gzip
 from reservoir_sampling import *
 
 class wedgeSampling:
-    edge_res = list
-    wedge_res = list
-    tot_wedges = int
-    new_wedges = list
-    isClosed = list
-    t = int
+    edge_res: list
+    wedge_res: list
+    tot_wedges: int
+    new_wedges: list
+    isClosed: list
+    t: int
 
     def __init__(self, se, sw):
         self.file = gzip.open("web-NotreDame.txt.gz", "rb")
