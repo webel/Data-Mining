@@ -46,16 +46,22 @@ class StreamingTriangles:
             line = open_file.readline()
             edge = self.edge_from_line(line)
             self.edge_res[i] = edge
+        print('Initial edge_res', self.edge_res)
+
+        # NOTE: testing by resetting after initing edge_res...
+        # which doesn't seem to work either as all edge_res 
+        # are the same in update 
 
         # Init the number of lines we've read
-        self.t = i+1
-
+        self.t = i+1 # 0
+        # We set the pointer to the top of the file
+        #open_file.seek(0)
         # NOTE: From these edges, we generate a random wedge by doing a second level of reservoir sampling.
         # This process implicitly treats the wedges created in the edge reservoir as a stream,
         # and performs reservoir sampling on that. Overall, this method approxi- mates uniform
         # random wedge sampling... <- Not really what we're doing, but we are creating wedges.
         self.wedge_res = self.sample_wedges()
-        print(self.wedge_res)
+        print('Initial wedge_res', self.wedge_res)
 
         # For each edge e_t in stream call update
         while True:
@@ -65,10 +71,19 @@ class StreamingTriangles:
             edge = self.edge_from_line(line)
             self.t += 1
             self.update(edge)
+            # Let p be the fraction of entries in isClosed set to true
+            p = sum(self.is_closed)/len(self.is_closed)
+            print(self.wedge_res)
+            print(self.is_closed)
+            # set k_t = 3p
+            k_t = 3*p
+            # k_t is the transitivity at t
+            print(f"k_{self.t}: {k_t}")
+            # set T_t = [pt^2/s_e(s_e-1)] x tot_wedges
+            T_t = p**2/(self.s_e*(self.s_e-1)) * self.tot_wedges
+            # T_t is the number of triangles at t
+            print(f"T_{self.t}: {T_t} \n")
 
-        # Let p be the fraction of entries in isClosed set to true
-        # set k_t = 3p
-        # set T_t = [pt^2/s_e(s_e-1)] x tot_wedges
 
     def sample_wedges(self):
         """Sample wedges from our current self.edge_res
@@ -150,10 +165,16 @@ class StreamingTriangles:
         edge_res_was_updated = False
         # Perform reservoir sampling, steps 4-7
         for i in range(self.s_e):
+            #import ipdb; ipdb.set_trace()
             x = random.random()
             if x <= 1/self.t:
                 edge_res_was_updated = True
+                # TODO: I don't get this, could become
+                # self.edge_res = [same, same, same...] if <= 1/self.t is
+                # high as in the beginning if we reset file and t = 0
                 self.edge_res[i] = e_t
+                print('Updated edge_res!', self.edge_res)
+        # Remaining steps
         if(edge_res_was_updated):
             self.wedge_res
             samples = self.sample_wedges()
@@ -170,4 +191,4 @@ class StreamingTriangles:
                     self.is_closed[i] = False
 
 
-StreamingTriangles(4, 2, open("toy_graph.txt", "r"))
+StreamingTriangles(3, 2, open("toy_graph.txt", "r"))
