@@ -21,25 +21,17 @@ Two primary data structures:
 
 Two parameters:
 
-- $s_e$
+- $s_e$ the size of the edge reservoir (pool)
 
-- $s_w$
+- $s_w$ the size of the wedge reservoir (pool)
+
+Two parts of the algorithm:
+
+- Streaming-Triangle
+
+- Update, invoked every time a new edge appears. After edge $e_t$ is processed here (i.e. the edge at time t), the algorithm computes running estimates for $k_t$ and $T_t$. Which don't have to be stored, but can be output directly.
 
 **...to be continued...**
 
 [research gate]: https://www.researchgate.net/figure/Example-graph-with-12-wedges-and-1-triangle_fig1_221666184
 
-## Reservoir sampling pseudocode
-
-    (* S has items to sample, R will contain the result *)
-    ReservoirSample(S[1..n], R[1..k])
-    // fill the reservoir array
-    for i := 1 to k
-        R[i] := S[i]
-
-    // replace elements with gradually decreasing probability
-    for i := k+1 to n
-        (* randomInteger(a, b) generates a uniform integer from the inclusive range {a, ..., b} *)
-        j := randomInteger(1, i)
-        if j <= k
-            R[j] := S[i]
