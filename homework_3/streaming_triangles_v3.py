@@ -61,9 +61,9 @@ class Wedge:
     def closed_by(self, z):
         if self.left == z.left and self.right == z.right:
             return True
-        # NOTE: shouldn't need to check other way as both are sorted
-        # if self.left == z.right and self.right == z.left:
-        #     return True
+        # NOTE: shouldn't need to check other way as both are sorted... but will do
+        if self.left == z.right and self.right == z.left:
+            return True
         return False
 
     def __hash__(self):
@@ -72,6 +72,9 @@ class Wedge:
 
 def get_wedges(edge_res):
     """Get all wedges from our current self.edge_res
+
+    NOTE: when testing, this verboseness served faster than
+    iterating over edge_res in two loops.
 
     First create an edge_mapping, i.e. for each vertice x in
     (x, y) set a dictionary key to x and the value to the list
@@ -195,8 +198,8 @@ def update(
             updated = True
             edge_res[i] = edge
 
-    # We perform some updates to tot wedges and determine the new wedges Nt (new_wedges_t).
-    # Finally, in Steps 11-16, we perform reservoir sampling on wedge res, where each entry is
+    # We perform some updates to tot_wedges and determine the new wedges Nt (new_wedges_t).
+    # Finally, in Steps 11-16, we perform reservoir sampling on wedge_res, where each entry is
     # randomly replaced with some wedge in Nt. Note that we may remove wedges that have already closed.
     if updated:
         tot_wedges = get_wedges(edge_res)
