@@ -21,55 +21,6 @@ def flatten(list_of_lists):
     return chain.from_iterable(list_of_lists)
 
 
-@dataclass
-class Edge:
-    left: int
-    right: int
-
-    @staticmethod
-    def from_line(line):
-        decoded = sorted(line.decode().strip().split("\t"))
-        edge = (int(decoded[0]), int(decoded[1]))
-        return Edge(edge[0], edge[1])
-
-    def as_tuple(self):
-        return (self.left, self.right)
-
-
-@dataclass
-class Wedge:
-    left: int
-    middle: int
-    right: int
-
-    @staticmethod
-    def from_edges(x, y):
-        if len(set(flatten([x.as_tuple(), y.as_tuple()]))) != 3:
-            # Short circuit by checking if the set of our edges isn't 3,
-            # i.e. the set is 2, x == y, or 4 -> they have nothing in common
-            return False
-        if x.left == y.left:
-            return Wedge(x.right, x.left, y.right)
-        if x.right == y.right:
-            return Wedge(y.left, y.right, x.left)
-        if x.left == y.right:
-            return Wedge(y.left, x.left, x.right)
-        if y.left == x.right:
-            return Wedge(x.left, x.right, y.right)
-        return False
-
-    def closed_by(self, z):
-        if self.left == z.left and self.right == z.right:
-            return True
-        # NOTE: shouldn't need to check other way as both are sorted
-        # if self.left == z.right and self.right == z.left:
-        #     return True
-        return False
-
-    def __hash__(self):
-        return hash((self.left, self.middle, self.right))
-
-
 def get_wedges(edge_res):
     """Get all wedges from our current self.edge_res
 
@@ -90,8 +41,8 @@ def get_wedges(edge_res):
     """
     edge_mapping = collections.defaultdict(set)
     for edge in edge_res:
-        edge_mapping[edge.left].add(edge.right)
-        edge_mapping[edge.right].add(edge.left)
+        edge_mapping[edge[0]].add(edge[1])
+        edge_mapping[edge[1]].add(edge[0])
     candidates = list(
         filter(lambda vertice: len(edge_mapping[vertice]) >= 2, list(edge_mapping))
     )
@@ -105,12 +56,26 @@ def get_wedges(edge_res):
             for pair in pairwise(other_vertices):
                 pair = list(pair)
                 pair.insert(1, vertice)
-                wedges.add(Wedge(*pair))
+                wedges.add(tuple(pair))
         else:
-            other_vertices = sorted(list(other_vertices))
             other_vertices.insert(1, vertice)
-            wedges.add(Wedge(*other_vertices))
+            wedges.add(tuple(other_vertices))
     return len(wedges)
+
+
+def get_wedge(edge1, edge2):
+    """Check if two edges forms a wedge, return false or a wedge."""
+
+    if edge1 == edge2:
+        return False
+
+    for i in range(2):
+        for j in range(2):
+            if edge1[i] == edge2[j]:
+                edges = sorted((edge1[1 - i], edge2[1 - j]))
+                return (edges[0], edge1[i], edges[1])
+
+    return False
 
 
 def get_new_wedges(edge_t, edge_res):
@@ -118,7 +83,7 @@ def get_new_wedges(edge_t, edge_res):
     new_wedges = []
 
     for edge in edge_res:
-        wedge = Wedge.from_edges(edge, edge_t)
+        wedge = get_wedge(edge, edge_t)
         if wedge:
             new_wedges.append(wedge)
 
@@ -156,7 +121,8 @@ def main(open_file, s_e: int, s_w: int):
         if line.startswith(b"#"):
             # Don't bother with comments
             continue
-        edge = Edge.from_line(line)
+        decoded = sorted(line.decode().strip().split("\t"))
+        edge = (int(decoded[0]), int(decoded[1]))
         tot_wedges = update(
             edge, t, s_e, s_w, edge_res, wedge_res, tot_wedges, is_closed
         )
@@ -169,12 +135,12 @@ def main(open_file, s_e: int, s_w: int):
 
 
 def update(
-    edge: Edge,
+    edge: tuple,
     t: int,
     s_e: int,
     s_w: int,
-    edge_res: list[Edge],
-    wedge_res: list[Wedge],
+    edge_res: list[tuple],
+    wedge_res: list[tuple],
     tot_wedges: int,
     is_closed: list[bool],
 ):
@@ -183,8 +149,10 @@ def update(
     # Steps 1-3 determines all the wedges in the wedge reservoir that are closed by e_t
     # and updates is_closed accordingly.
     for i in range(s_w):
-        if wedge_res[i] and wedge_res[i].closed_by(edge):
-            is_closed[i] = True
+        if wedge_res[i]:
+            is_closed[i] = (
+                edge[0] == wedge_res[i][0] and edge[1] == wedge_res[i][2]
+            ) or (edge[0] == wedge_res[i][2] and edge[1] == wedge_res[i][0])
 
     # Steps 4-7 we perform reservoir sampling on edge_res. This involved replacing each entry by
     # e_t with probability 1/t, remaining steps are executed iff this leads to any changes in edge_res
@@ -212,23 +180,7 @@ def update(
     return tot_wedges
 
 
-def tests():
-    assert Wedge.from_edges(Edge(3, 4), Edge(3, 5)).closed_by(
-        Edge(4, 5)
-    ), "(3,4) (3,5) should be closed by (4,5)"
-    assert Wedge.from_edges(Edge(2, 3), Edge(1, 2)).closed_by(
-        Edge(1, 3)
-    ), "(2,3) (1,2) should be closed by (1,3)"
-    assert Wedge.from_edges(Edge(1, 2), Edge(2, 3)).closed_by(
-        Edge(1, 3)
-    ), "(1,2) (2,3) should be closed by (1,3)"
-    assert Wedge.from_edges(Edge(3, 4), Edge(2, 4)).closed_by(
-        Edge(2, 3)
-    ), "(3,4) (2,4) should be closed by (2,3)"
-
-
 if __name__ == "__main__":
-    tests()
     main(gzip.open("web-NotreDame.txt.gz", "rb"), 20000, 20000)
 
 ## web-NotreDame
