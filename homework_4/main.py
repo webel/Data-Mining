@@ -81,10 +81,12 @@ def plot_graph(edge_list, labels):
     import networkx as nx
     import matplotlib.pyplot as plt
 
+    nodes = np.unique(edge_list)
     graph = nx.Graph()
+    graph.add_nodes_from(nodes)
     graph.add_edges_from(edge_list)
     plt.figure()
-    nx.draw(graph, node_color=labels, with_labels=True, font_color="white")
+    nx.draw(graph, node_color=labels, font_color="white")
     plt.show()
 
 
