@@ -5,8 +5,10 @@ description = ""
 authors = ["Evie <evita@stenqvist.co>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "3.9"
 black = "^21.10b0"
+matplotlib = "^3.5.0"
+networkx = "^2.6.3"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
