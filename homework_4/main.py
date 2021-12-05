@@ -123,14 +123,14 @@ if __name__ == "__main__":
         "-k",
         "--n_clusters",
         default=4,
-        help="Provide number of clusters",
+        help="Provide number of clusters, default: 4",
     )
     parser.add_argument(
         "-plt",
         "--plot",
         default=False,
         action="store_true",
-        help="Whether to plot the network and clusters",
+        help="Whether to plot the network and clusters, default: False",
     )
     args = parser.parse_args()
     n = 4
