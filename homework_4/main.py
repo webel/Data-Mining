@@ -7,6 +7,7 @@ Citation:
     In Advances in neural information processing systems (pp. 849-856).
 """
 import numpy as np
+import argparse
 
 
 def kMeans(X, K, maxIters=10):
@@ -104,4 +105,28 @@ def nips_clustering_algorithm(data_path, k, plot=False):
 
 
 if __name__ == "__main__":
-    nips_clustering_algorithm("simple.dat", 2)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p",
+        "--path",
+        default="example1.dat",
+        help="Provide csv file path, default: example1.dat",
+    )
+    parser.add_argument(
+        "-k",
+        "--n_clusters",
+        default=4,
+        help="Provide number of clusters",
+    )
+    parser.add_argument(
+        "-plt",
+        "--plot",
+        default=False,
+        action="store_true",
+        help="Whether to plot the network and clusters",
+    )
+    args = parser.parse_args()
+    n = 4
+    print(f"Outputs from {n} runs: ")
+    for i in range(n):
+        nips_clustering_algorithm(args.path, int(args.n_clusters), args.plot)
