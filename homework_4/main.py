@@ -10,13 +10,13 @@ import numpy as np
 import argparse
 
 
-def kMeans(X, K, maxIters=10):
+def kMeans(X, K, epochs=100):
     """kMeans clustering algorithm
     Tweaked from https://gist.github.com/bistaumanga/6023692
     as to not need unnecessary scipy import.
     """
-    centroids = X[np.random.choice(np.arange(len(X)), K), :]
-    for i in range(maxIters):
+    centroids = X[np.random.choice(np.arange(len(X)), K)]
+    for i in range(epochs):
         # Cluster Assignment step
         C = np.array(
             [
@@ -24,13 +24,18 @@ def kMeans(X, K, maxIters=10):
                 for x_i in X
             ]
         )
-        # Move centroids step
-        centroids = [X[C == k].mean(axis=0) for k in range(K)]
+        # Ensure we have K clusters, otherwise reset centroids and start over
+        # If there are fewer than K clusters, outcome will be nan.
+        if len(np.unique(C)) < K:
+            centroids = X[np.random.choice(np.arange(len(X)), K)]
+        else:
+            # Move centroids step
+            centroids = [X[C == k].mean(axis=0) for k in range(K)]
     return np.array(centroids), C
 
 
 def load_edgelist_from_csv_file(file_path: str):
-    return np.loadtxt(file_path, delimiter=",", dtype=int)
+    return np.loadtxt(file_path, delimiter=",", dtype=int, usecols=(0, 1))
 
 
 def form_affinity_matrix(S):
